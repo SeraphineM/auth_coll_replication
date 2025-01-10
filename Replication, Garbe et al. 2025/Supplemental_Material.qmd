@@ -1,0 +1,3610 @@
+---
+title: "Supplemental Material for 'Authoritarian collaboration and repression in the digital age: Balancing foreign investment and control in internet infrastructure'"
+author:
+- name: Lisa Garbe
+  affiliations: 
+    - WZB Berlin, Germany
+- name: Seraphine F. Maerz
+  affiliations: 
+    - University of Melbourne, Australia
+- name: Tina Freyburg
+  affiliations: 
+    - Universität St.Gallen, Switzerland
+date: 'last-modified'
+date-format: '[Version:] MMMM D, YYYY'
+format:
+  pdf: 
+    pdf-engine: xelatex 
+    colorlinks: true
+    link-citations: true
+    keeptex: true
+    number-sections: true  # Numbered sections
+    toc: true              # Enable table of contents
+    toc-depth: 2           # Define TOC depth (how many levels of headers to include)
+    template-partials: 
+      - title.tex
+    include-in-header: 
+      text: |
+       \usepackage{hyperref}
+       \usepackage[noblocks]{authblk}
+       \usepackage{booktabs}
+       \usepackage{array}
+       \usepackage{longtable}
+       \usepackage{threeparttable}
+       \usepackage{xcolor}
+       \usepackage{caption}
+       \captionsetup{labelformat=empty}
+       \usepackage{float}
+       \floatplacement{table}{h!}
+       \usepackage{setspace}
+  html:
+    df_print: paged
+  docx: 
+    number-sections: true  
+    toc: true              
+    toc-depth: 2           
+bibliography: bibliography.bib
+thanks: "Replication data is available at https://tosco.shinyapps.io/data/."
+prefer-html: true
+graphics: yes
+geometry: margin=0.65in
+fontfamily: mathpazo
+fontsize: 8.5pt
+endnote: no
+editor:
+  mode: source
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      cache=FALSE,
+                      message=FALSE, warning=FALSE,
+                      fig.path='figures/',
+                      cache.path = '_cache/',
+                      fig.process = function(x) {
+                      x2 = sub('-\\d+([.][a-z]+)$', '\\1', x)
+                      if (file.rename(x, x2)) x2 else x
+                      })
+```
+
+\newpage
+
+
+# Foreign investment in ISPs in African autocracies
+
+![Aggregated shares of foreign majority-owned ISPs per country](figures/allshares.jpg){#fig-allshares width="80%"}
+\newpage
+
+# Descriptive statistics
+
+```{r}
+#| label: tbl-descriptive
+#| echo: false
+#| message: false
+#| warning: false
+#| tbl-cap: "Descriptive Statistics"
+#| tbl-align: center
+
+library(tidyr)
+library(dplyr)
+library(flextable)
+
+### read dataset
+df <- read.csv("data/data_aggr_country_reg.csv")
+
+# Select relevant variables
+df_des <- df %>% 
+  select(share_for_maj, share_aut, share_dem, state_dummy, PTS_S, theta_mean_inv, v2clkill_inv, pop_total, pop_rural, v2x_ex_military, v2x_ex_hereditary, gdppc, gdppc_growth, nat_resources, trade, v2cltrnslw, v2x_polyarchy, conflict, aut_ep, e_pt_coup, number_comp, onlinerep, treatment_aut)
+
+# Reshape and calculate summary statistics
+df_des <- df_des %>% 
+  gather(key, variable) %>% 
+  group_by(key) %>%
+  summarise(
+    min = min(na.omit(variable)),
+    max = max(na.omit(variable)),
+    mean = mean(na.omit(variable)),
+    sd = sd(na.omit(variable)),
+    n = length(na.omit(variable))
+  ) %>%
+  mutate(
+    mean = round(mean, digits=2),
+    sd = round(sd, digits=2),
+    min = round(min, digits=2),
+    max = round(max, digits=2)
+  )
+
+df_des <- df_des %>%
+  mutate(
+    mean = case_when(
+      key %in% c("pop_total", "pop_rural") ~ sprintf("%.0f", mean),  # Format without decimals
+      TRUE ~ as.character(mean)  # Convert other numbers to string to keep consistent format
+    ),
+    sd = case_when(
+      key %in% c("pop_total", "pop_rural") ~ sprintf("%.0f", sd),
+      TRUE ~ as.character(sd)
+    ),
+    min = case_when(
+      key %in% c("pop_total", "pop_rural") ~ sprintf("%.0f", min),
+      TRUE ~ as.character(min)
+    ),
+    max = case_when(
+      key %in% c("pop_total", "pop_rural") ~ sprintf("%.0f", max),
+      TRUE ~ as.character(max)
+    )
+  )
+
+# Re-order rows and set names
+df_des <- df_des[c(14,12,13,9,1,16,19,18,5,6,7,10,11,17,20,21,22,2,3,4,23,8,15),]
+names <- c("Share foreign","Share foreign-authoritarian", "Share foreign-democratic","Online repression", "Repression (PTS)","Repression (Fariss)","Repression (VDEM)","Treatment indicator", "GDP pc","GDP pc growth","Nat. resources rents (% GDP)","Population rural","Population total","Trade (% of GDP)", "Legal transparency", "Hereditary","Military","Autocratzation","Conflict","Coup","Polyarchy","Number of ISPs", "State involvement")
+
+df_des$key <- names
+
+# Add variable type column
+df_des$Type <- NA
+df_des[c(1:4),7] <- "Dependent"
+df_des[c(5:8),7] <- "Independent"
+df_des[c(9:23),7] <- "Control"
+
+# Add source column
+df_des$Source <- NA
+df_des[c(1:3,8,22,23),8] <- "TOSCO 2.0"
+df_des[5,8] <- "PTS"
+df_des[6,8] <- "Fariss et al."
+df_des[7,8] <- "V-DEM"
+df_des[c(9:14),8] <- "World Bank"
+df_des[c(4,15:18,20,21),8] <- "V-DEM"
+df_des[19,8] <- "UCDP/PRIO"
+
+# Convert to flextable
+ft <- flextable(df_des)
+
+# Customize the flextable
+ft <- ft %>%
+  set_header_labels(
+    key = "Variable", 
+    min = "Minimum", 
+    max = "Maximum", 
+    mean = "Mean", 
+    sd = "SD", 
+    n = "N", 
+    Type = "Type", 
+    Source = "Source"
+  ) %>%
+  flextable::fontsize(size = 7.5) %>%  # Set font size
+  flextable::font(fontname = "Times New Roman") %>%  # Set font similar to LaTeX
+  flextable::set_table_properties(layout = "autofit")
+
+
+# Print the flextable
+ft
+
+```
+\newpage
+
+# Alternative coding of regime type
+
+As a robustness check, we employ two different indicators of democracy to classify whether a company’s headquarters is located in a democratic or autocratic country, as well as to define the sample of African autocracies. Although various democracy indices exist (see @krieger2022measuring for an overview), many could not be included in our analysis due to limitations in time coverage (e.g., @kekic2007economist) or their reliance on a minimalist definition of democracy (e.g., @boix2013complete). We selected two indicators that adequately cover our study period: the Lexical Index of Electoral Democracy (LIED) [@skaaning2015lexical] and the Polity V index [@marshall2002polity]. Data from these two sources were used to recode the regime types of company headquarters and to identify a sample of African autocracies. We then re-ran our main analyses using the recoded data, with the results presented in the following subsections.
+
+## Analyses based on the Lexical Index of Electoral Democracy (LIED)
+
+LIED operationalizes democracy as a series of necessary and sufficient conditions. Specifically, it codes regimes based on factual characteristics to avoid problems of subjective measurement. The binary codings are then "aggregated together using the cumulative logic of a lexical scale with seven levels" [@skaaning2015lexical, p. 1493]. More details are provided in the codebook [@skaaning2021lexical]. Following a similar logic as V-Dem, we code all electoral democracies and polyarchies as democratic and the remaining regimes as autocratic. @tbl-lied-fariss and @fig-match-lied present results from the main analyses.
+
+```{r}
+#| label: tbl-lied-fariss
+#| echo: false
+#| message: false
+#| warning: false
+#| tbl-cap: "Regression Analysis with the Lexical Indicator of Electoral Democracy (LIED)"
+#| tbl-align: center
+
+# Load packages
+library(dplyr)
+library(tidyverse)
+library(lmtest)
+library(sandwich)
+library(modelsummary)
+library(flextable)
+library(kableExtra)
+
+### read dataset
+df <- read.csv("../data/data_aggr_country_reg_lied.csv")
+
+
+# defining function to run multiple regression models
+# Function to run multiple regression models
+Regression_FUN <- function(outcome, variables, controls, data){
+  if (controls == "None") {
+    f <- paste0(outcome, "~ ", variables, " + factor(cc) + factor(year)")
+  } else if (controls == "All") {
+    f <- paste0(outcome, "~ ", variables, " + z.logpop + z.pop_rural + z.v2x_ex_military + z.v2x_ex_hereditary + z.loggdp + z.gdppc_growth + z.lognat + z.trade + z.v2cltrnslw + z.state_dummy + factor(cc) + factor(year)")
+  }
+  mod.main <- lm(as.formula(f), data = data)
+  return(mod.main)  # Returning only the model object
+}
+
+controls_list <- c("None","All")
+
+
+# defining labels
+labels_fariss <- c(
+  "theta_mean_inv" = "Repression (Fariss)",
+  "z.logpop" = "Tot. Population (log)",
+  "z.pop_rural" = "Rural Population (% of total)",
+  "z.v2x_ex_military" = "Military Control",
+  "z.v2x_ex_hereditary" = "Hereditary Control",
+  "z.loggdp" = "GDP pc (log)",
+  "z.gdppc_growth" = "GDP pc growth",
+  "z.lognat" = "Natural Resources (% of GDP)",
+  "z.trade" = "Trade (% of GDP)",
+  "z.v2cltrnslw" = "Legal Transparency",
+  "z.state_dummy" = "State-owned ISP",
+  "(Intercept)" = "Constant"
+)
+
+# Running the models
+lm_all2 <- lapply(controls_list, function(x) Regression_FUN("share_for_maj", "theta_mean_inv", x, df))
+lm_aut2 <- lapply(controls_list, function(x) Regression_FUN("share_aut", "theta_mean_inv", x, df))
+lm_dem2 <- lapply(controls_list, function(x) Regression_FUN("share_dem", "theta_mean_inv", x, df))
+
+# Combine all models into one list
+lm_all2 <- c(lm_all2, lm_aut2, lm_dem2)
+
+# Create a data frame for add_rows with the correct number of columns (6 columns for 6 models)
+# Since we need a total of 7 columns, we should add blank columns for the empty space
+# Adjusting the add_rows to have 7 columns
+add_rows_data <- data.frame(
+  " " = c("Year FE", "Country FE"),  # Row labels
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes"
+)
+
+# Generate the table with flextable
+tab <- modelsummary(models = lm_all2,
+                    coef_map = labels_fariss,
+                    estimate = "{estimate} ({std.error}){stars}",  # Display coefficient with stars
+                    statistic = NULL,
+                    gof_omit = "F|ser|AIC|BIC|RMSE|Log\\.Lik",  # Omit specific GOF stats
+                    add_rows = add_rows_data,
+                    output = "flextable")
+
+tab <- tab %>%
+  flextable::add_header_row(values = c(" ", "Share of Foreign ISPs", "Share of Foreign Autocratic ISPs", "Share of Foreign Democratic ISPs"), colwidths = c(1, 2, 2, 2)) %>%
+  # Apply smaller font size to headers
+  flextable::fontsize(size = 9, part = "header") %>%
+  # Apply smaller font size to the body of the table (optional)
+  flextable::fontsize(size = 7, part = "body") %>%
+  padding(padding = 0, part = "all") %>% 
+  flextable::font(fontname = "Times New Roman", part = "all") 
+fittedtab <- function(tab, pgwidth = 6.5){
+  ft_out <- tab %>% autofit()
+  ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
+  return(ft_out)
+}
+tab <- fittedtab(tab)
+tab
+
+
+```
+\newpage
+
+```{r}
+#| label: fig-match-lied
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Effects of foreign-autocratic investment on online repression. Point estimates from matching adjusting for treatment and covariate histories during the 2-year pre-treatment period ($L$ = 2) and estimated with a lead of three years ($F$ = 3), with propensity score weighting as refinement method; asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars. Estimates in the year before treatment (t-1) are based on a placebo test."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '50%'
+#| dpi: 300
+
+library(dplyr)
+library(tidyverse)
+library(texreg)
+library(PanelMatch)
+library(ERT)
+library(vdemdata)
+library(ggpubr)
+
+rm(list=ls())
+
+# read dataset
+df_all <- read.csv("../data/data_aggr_country_lied.csv")
+
+# load ERT data
+ert <- ERT::get_eps()
+ert <- ert %>% 
+  select(country_text_id, year, aut_ep_id, aut_ep) 
+
+# load vdem data as we need a reliable merging variable for conflict data below (COWcode)
+vdem <- vdemdata::vdem %>% 
+  select(year, country_text_id, COWcode) 
+
+# load conflict data
+# UCDP/PRIO Armed Conflict Dataset version 23.1 (country year)
+ucdp <- readRDS("../data/UcdpPrioConflict_v23_1.rds")
+# internal conflicts
+# here we take UCDP data as it gives the amount of conflicts in a year 
+# and not just yes/no as the conflict variable in vdem
+# prepare UCDP data: interstate conflict SIDE A
+intra <- ucdp %>% 
+  filter(type_of_conflict == 3) %>% # to find intrastate conflicts, no international involvement
+  select(COWcode = gwno_a, year, conflict_id, side_b) %>% # first side A
+  group_by(COWcode, year) %>% 
+  summarise(intra_conflicts = length(conflict_id),
+            opponent_intra =  paste0(side_b, collapse = ", ")) %>% # number of conflicts
+  mutate(COWcode = as.numeric(COWcode),
+         conflict = intra_conflicts) %>% 
+  ungroup() %>% 
+  drop_na()
+intra <- intra %>%
+  select(COWcode, year, conflict) 
+
+# merge with df_all
+ert <- left_join(df_all, ert, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+vdem <- left_join(ert, vdem, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+df_all <- left_join(vdem, intra, by = c("COWcode", "year"))%>% 
+  drop_na(COWcode)
+
+# recode conflict variables, if NA then 0
+df_all <- df_all %>% 
+  mutate(conflict = ifelse(is.na(conflict), 0, conflict))
+
+# subset and rename 
+df_sub <- df_all %>%
+  select(cc, year, share_for_maj, share_aut, share_dem, state_dummy, number_comp,
+         pop_total, gdppc, gdppc_growth, 
+         v2smgovfilprc, v2smgovshut, v2smgovsmmon,lexical_index_plus,
+         aut_ep, coups = e_pt_coup, conflict, theta_mean_inv) 
+
+# prepare data, only autocracies
+df <- subset(df_sub, df_sub$lexical_index_plus < 6)
+
+# treatment: country is treated if at least  one ISP is majority-owned by foreign-autocratic shareholder
+df$treatment_aut <- ifelse(df$share_aut > 0,1,0)
+
+# take log of gdp and pop data
+df <- df %>% 
+  mutate(pop_log = log(pop_total),
+         gdppc_log = log(gdppc)) 
+
+# let's flip the Internet censorship and shutdown variables so results are more intuitive
+df <- df %>%
+  mutate(censor = 0-v2smgovfilprc,
+         shut = 0-v2smgovshut,
+         monitor = 0-v2smgovsmmon,
+         onlinerep = pmax(censor, shut, monitor)) # let's build a variable on online repression which takes the max of censor, shut, monitor (add control later on)
+
+# prepare dataset for PanelMatch packacke requirements
+# we need a numerical country identifier 
+df_match <- df %>%
+  group_by(cc) %>%
+  mutate(index = cur_group_id())
+
+
+#### Main model: foreign investment from autocratic countries (L=2, F=4) ####
+
+# subset data
+df_match_aut_treat <- df_match %>%
+  select(cc, year, index, treatment_aut, onlinerep, state_dummy, number_comp,
+         pop_log, gdppc_log, gdppc_growth, aut_ep, coups, conflict, theta_mean_inv) %>%
+  mutate(year = as.integer(year),
+         index = as.integer(index))%>%
+  as.data.frame()
+
+# deselect cc as not integer 
+df_match_aut <- df_match_aut_treat %>%
+  select(-cc) %>% 
+  drop_na()
+
+
+# propensity score weighting ##
+PM.results.psweight <- PanelMatch(lag = 2, time.id = "year", unit.id = "index", 
+                                  treatment = "treatment_aut", refinement.method = "ps.weight", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + 
+                                    I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + 
+                                    I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", outcome.var = "onlinerep",
+                                  lead = 0:3, placebo.test = TRUE)
+
+# get point estimates
+PE.results.psweight <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.9)
+
+
+# conduct placebo test for t-1
+placebo_1 <- placebo_test(PM.results.psweight,
+                          data = df_match_aut,
+                          number.iterations = 1000,
+                          plot = FALSE)
+placebo_1_est <- placebo_1$estimates[1]
+z_95 <- 1.96
+placebo_1_high <- placebo_1$estimates[1] + z_95*placebo_1$standard.errors
+placebo_1_low <- placebo_1$estimates[1] - z_95*placebo_1$standard.errors
+z_90 <- 1.645
+placebo_1_high_90 <- placebo_1$estimates[1] + z_90*placebo_1$standard.errors
+placebo_1_low_90 <- placebo_1$estimates[1] - z_90*placebo_1$standard.errors
+
+placebo_data_pred <- data.frame(year = c(-1), 
+                                estimate =  placebo_1_est,
+                                conflow = placebo_1_low,
+                                confhigh = placebo_1_high)
+placebo_data_ninty <- data.frame(year = c(-1), 
+                                 estimate =  placebo_1_est,
+                                 conflow_90 = placebo_1_low_90,
+                                 confhigh_90 = placebo_1_high_90)
+
+# make a nice plot including placebo test estimates
+aut_lag2_pred <- summary(PE.results.psweight, verbose = FALSE)
+aut_lag2_pred <- cbind(aut_lag2_pred , time = c(0,1,2,3))
+aut_lag2_pred <- as.data.frame(aut_lag2_pred)
+aut_lag2_pred <- aut_lag2_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_lag2_ninty <- summary(ninty, verbose = FALSE)
+aut_lag2_ninty <- cbind(aut_lag2_ninty , time = c(0,1,2,3))
+aut_lag2_ninty <- as.data.frame(aut_lag2_ninty)
+aut_lag2_ninty <- aut_lag2_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_lag2_all <- cbind(aut_lag2_pred, aut_lag2_ninty[,3:4])
+placebo_all <- cbind(placebo_data_pred, placebo_data_ninty[,3:4])
+all <- rbind(aut_lag2_all, placebo_all)
+
+aut_lag2 <- ggplot(data = all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-1,3,1)) +
+  labs(x = "Years around treatment", 
+       y = "Estimated effect", 
+       title = "")
+aut_lag2
+
+```
+
+
+## Analyses based on Polity V
+
+We use the *AUTOC* variable of the Polity data to classify a regime as autocratic [@marshall2017polity]. This indicator is based on an eleven-point additive scale derived from codings of the competitiveness of political participation, the regulation of participation, the openness and competitiveness of executive recruitment, and constraints on the chief executive (for more details see ibid., p. 15). For our purposes, we classify a regime as autocratic if its value is at least 1 (AUTOC \>  1). @tbl-polity-fariss and @fig-match-polity show results from the main analyses.
+
+```{r}
+#| label: tbl-polity-fariss
+#| echo: false
+#| message: false
+#| warning: false
+#| tbl-cap: "Regression Analysis with Polity V"
+#| tbl-align: center
+
+# Load packages
+library(dplyr)
+library(tidyverse)
+library(texreg)
+library(stargazer)
+library(lmtest)
+library(sandwich)
+library(xtable)
+library(plm)
+library(ggpubr)
+
+### read dataset
+df <- read.csv("../data/data_aggr_country_reg_polity.csv")
+
+
+# defining function to run multiple regression models
+# Function to run multiple regression models
+Regression_FUN <- function(outcome, variables, controls, data){
+  if (controls == "None") {
+    f <- paste0(outcome, "~ ", variables, " + factor(cc) + factor(year)")
+  } else if (controls == "All") {
+    f <- paste0(outcome, "~ ", variables, " + z.logpop + z.pop_rural + z.v2x_ex_military + z.v2x_ex_hereditary + z.loggdp + z.gdppc_growth + z.lognat + z.trade + z.v2cltrnslw + z.state_dummy + factor(cc) + factor(year)")
+  }
+  mod.main <- lm(as.formula(f), data = data)
+  return(mod.main)  # Returning only the model object
+}
+
+controls_list <- c("None","All")
+
+
+# defining labels
+labels_fariss <- c(
+  "theta_mean_inv" = "Repression (Fariss)",
+  "z.logpop" = "Tot. Population (log)",
+  "z.pop_rural" = "Rural Population (% of total)",
+  "z.v2x_ex_military" = "Military Control",
+  "z.v2x_ex_hereditary" = "Hereditary Control",
+  "z.loggdp" = "GDP pc (log)",
+  "z.gdppc_growth" = "GDP pc growth",
+  "z.lognat" = "Natural Resources (% of GDP)",
+  "z.trade" = "Trade (% of GDP)",
+  "z.v2cltrnslw" = "Legal Transparency",
+  "z.state_dummy" = "State-owned ISP",
+  "(Intercept)" = "Constant"
+)
+
+# Running the models
+lm_all2 <- lapply(controls_list, function(x) Regression_FUN("share_for_maj", "theta_mean_inv", x, df))
+lm_aut2 <- lapply(controls_list, function(x) Regression_FUN("share_aut", "theta_mean_inv", x, df))
+lm_dem2 <- lapply(controls_list, function(x) Regression_FUN("share_dem", "theta_mean_inv", x, df))
+
+# Combine all models into one list
+lm_all2 <- c(lm_all2, lm_aut2, lm_dem2)
+
+# Create a data frame for add_rows with the correct number of columns (6 columns for 6 models)
+# Since we need a total of 7 columns, we should add blank columns for the empty space
+# Adjusting the add_rows to have 7 columns
+add_rows_data <- data.frame(
+  " " = c("Year FE", "Country FE"),  # Row labels
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes"
+)
+
+# Generate the table with flextable
+tab <- modelsummary(models = lm_all2,
+                    coef_map = labels_fariss,
+                    estimate = "{estimate} ({std.error}){stars}",  # Display coefficient with stars
+                    statistic = NULL,
+                    gof_omit = "F|ser|AIC|BIC|RMSE|Log\\.Lik",  # Omit specific GOF stats
+                    add_rows = add_rows_data,
+                    output = "flextable")
+
+tab <- tab %>%
+  flextable::add_header_row(values = c(" ", "Share of Foreign ISPs", "Share of Foreign Autocratic ISPs", "Share of Foreign Democratic ISPs"), colwidths = c(1, 2, 2, 2)) %>%
+  # Apply smaller font size to headers
+  flextable::fontsize(size = 9, part = "header") %>%
+  # Apply smaller font size to the body of the table (optional)
+  flextable::fontsize(size = 7, part = "body") %>%
+  flextable::font(fontname = "Times New Roman", part = "all") 
+fittedtab <- function(tab, pgwidth = 6.5){
+  ft_out <- tab %>% autofit()
+  ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
+  return(ft_out)
+}
+tab <- fittedtab(tab)
+tab
+```
+\newpage
+
+```{r}
+#| label: fig-match-polity
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Effects of foreign-autocratic investment on online repression. Point estimates from matching adjusting for treatment and covariate histories during the 2-year pre-treatment period ($L$ = 2) and estimated with a lead of three years ($F$ = 3), with propensity score weighting as refinement method; asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars. Estimates in the year before treatment (t-1) are based on a placebo test."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '50%'
+#| dpi: 300
+
+library(dplyr)
+library(tidyverse)
+library(texreg)
+library(PanelMatch)
+library(ERT)
+library(vdemdata)
+library(ggpubr)
+
+rm(list=ls())
+
+# read dataset
+df_all <- read.csv("../data/data_aggr_country_polity.csv")
+
+# load ERT data
+ert <- ERT::get_eps()
+ert <- ert %>% 
+  select(country_text_id, year, aut_ep_id, aut_ep) 
+
+# load vdem data as we need a reliable merging variable for conflict data below (COWcode)
+vdem <- vdemdata::vdem %>% 
+  select(year, country_text_id, COWcode) 
+
+# load conflict data
+# UCDP/PRIO Armed Conflict Dataset version 23.1 (country year)
+ucdp <- readRDS("../data/UcdpPrioConflict_v23_1.rds")
+# internal conflicts
+# here we take UCDP data as it gives the amount of conflicts in a year 
+# and not just yes/no as the conflict variable in vdem
+# prepare UCDP data: interstate conflict SIDE A
+intra <- ucdp %>% 
+  filter(type_of_conflict == 3) %>% # to find intrastate conflicts, no international involvement
+  select(COWcode = gwno_a, year, conflict_id, side_b) %>% # first side A
+  group_by(COWcode, year) %>% 
+  summarise(intra_conflicts = length(conflict_id),
+            opponent_intra =  paste0(side_b, collapse = ", ")) %>% # number of conflicts
+  mutate(COWcode = as.numeric(COWcode),
+         conflict = intra_conflicts) %>% 
+  ungroup() %>% 
+  drop_na()
+intra <- intra %>%
+  select(COWcode, year, conflict) 
+
+# merge with df_all
+ert <- left_join(df_all, ert, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+vdem <- left_join(ert, vdem, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+df_all <- left_join(vdem, intra, by = c("COWcode", "year"))%>% 
+  drop_na(COWcode)
+
+# recode conflict variables, if NA then 0
+df_all <- df_all %>% 
+  mutate(conflict = ifelse(is.na(conflict), 0, conflict))
+
+# subset and rename 
+df_sub <- df_all %>%
+  select(cc, year, share_for_maj, share_aut, share_dem, state_dummy, number_comp,
+         pop_total, gdppc, gdppc_growth, 
+         v2smgovfilprc, v2smgovshut, v2smgovsmmon,autoc,
+         aut_ep, coups = e_pt_coup, conflict, theta_mean_inv) 
+
+# prepare data, only autocracies
+df <- subset(df_sub, df_sub$autoc != 0)
+
+# treatment: country is treated if at least  one ISP is majority-owned by foreign-autocratic shareholder
+df$treatment_aut <- ifelse(df$share_aut > 0,1,0)
+
+# take log of gdp and pop data
+df <- df %>% 
+  mutate(pop_log = log(pop_total),
+         gdppc_log = log(gdppc)) 
+
+# let's flip the Internet censorship and shutdown variables so results are more intuitive
+df <- df %>%
+  mutate(censor = 0-v2smgovfilprc,
+         shut = 0-v2smgovshut,
+         monitor = 0-v2smgovsmmon,
+         onlinerep = pmax(censor, shut, monitor)) # let's build a variable on online repression which takes the max of censor, shut, monitor (add control later on)
+
+# prepare dataset for PanelMatch packacke requirements
+# we need a numerical country identifier 
+df_match <- df %>%
+  group_by(cc) %>%
+  mutate(index = cur_group_id())
+
+
+#### Main model: foreign investment from autocratic countries (L=2, F=4) ####
+
+# subset data
+df_match_aut_treat <- df_match %>%
+  select(cc, year, index, treatment_aut, onlinerep, state_dummy, number_comp,
+         pop_log, gdppc_log, gdppc_growth, aut_ep, coups, conflict, theta_mean_inv) %>%
+  mutate(year = as.integer(year),
+         index = as.integer(index))%>%
+  as.data.frame()
+
+# deselect cc as not integer 
+df_match_aut <- df_match_aut_treat %>%
+  select(-cc) %>% 
+  drop_na()
+
+
+# propensity score weighting ##
+PM.results.psweight <- PanelMatch(lag = 2, time.id = "year", unit.id = "index", 
+                                  treatment = "treatment_aut", refinement.method = "ps.weight", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + 
+                                    I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + 
+                                    I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", outcome.var = "onlinerep",
+                                  lead = 0:3, placebo.test = TRUE)
+
+# get point estimates
+PE.results.psweight <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.9)
+
+
+# conduct placebo test for t-1
+placebo_1 <- placebo_test(PM.results.psweight,
+                          data = df_match_aut,
+                          number.iterations = 1000,
+                          plot = FALSE)
+placebo_1_est <- placebo_1$estimates[1]
+z_95 <- 1.96
+placebo_1_high <- placebo_1$estimates[1] + z_95*placebo_1$standard.errors
+placebo_1_low <- placebo_1$estimates[1] - z_95*placebo_1$standard.errors
+z_90 <- 1.645
+placebo_1_high_90 <- placebo_1$estimates[1] + z_90*placebo_1$standard.errors
+placebo_1_low_90 <- placebo_1$estimates[1] - z_90*placebo_1$standard.errors
+
+placebo_data_pred <- data.frame(year = c(-1), 
+                                estimate =  placebo_1_est,
+                                conflow = placebo_1_low,
+                                confhigh = placebo_1_high)
+placebo_data_ninty <- data.frame(year = c(-1), 
+                                 estimate =  placebo_1_est,
+                                 conflow_90 = placebo_1_low_90,
+                                 confhigh_90 = placebo_1_high_90)
+
+# make a nice plot including placebo test estimates
+aut_lag2_pred <- summary(PE.results.psweight, verbose = FALSE)
+aut_lag2_pred <- cbind(aut_lag2_pred , time = c(0,1,2,3))
+aut_lag2_pred <- as.data.frame(aut_lag2_pred)
+aut_lag2_pred <- aut_lag2_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_lag2_ninty <- summary(ninty, verbose = FALSE)
+aut_lag2_ninty <- cbind(aut_lag2_ninty , time = c(0,1,2,3))
+aut_lag2_ninty <- as.data.frame(aut_lag2_ninty)
+aut_lag2_ninty <- aut_lag2_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_lag2_all <- cbind(aut_lag2_pred, aut_lag2_ninty[,3:4])
+placebo_all <- cbind(placebo_data_pred, placebo_data_ninty[,3:4])
+all <- rbind(aut_lag2_all, placebo_all)
+
+aut_lag2 <- ggplot(data = all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-1,3,1)) +
+  labs(x = "Years around treatment", 
+       y = "Estimated effect", 
+       title = "")
+aut_lag2
+
+```
+
+# Regression analysis (Fariss, Figure 2)
+
+
+```{r}
+#| label: tbl-fariss
+#| echo: false
+#| message: false
+#| warning: false
+#| tbl-cap: "Regression Analysis (Fariss)"
+#| tbl-align: center
+#| 
+#| 
+
+# Required packages
+library(dplyr)
+library(tidyverse)
+library(lmtest)
+library(sandwich)
+library(modelsummary)
+library(flextable)
+library(kableExtra)
+
+### read dataset
+df <- read.csv("data/data_aggr_country_reg.csv")
+
+#### Regression models with Fariss 
+# defining function to run multiple regression models
+# Function to run multiple regression models
+Regression_FUN <- function(outcome, variables, controls, data){
+  if (controls == "None") {
+    f <- paste0(outcome, "~ ", variables, " + factor(cc) + factor(year)")
+  } else if (controls == "All") {
+    f <- paste0(outcome, "~ ", variables, " + z.logpop + z.pop_rural + z.v2x_ex_military + z.v2x_ex_hereditary + z.loggdp + z.gdppc_growth + z.lognat + z.trade + z.v2cltrnslw + z.state_dummy + factor(cc) + factor(year)")
+  }
+  mod.main <- lm(as.formula(f), data = data)
+  return(mod.main)  # Returning only the model object
+}
+
+controls_list <- c("None","All")
+
+# defining labels
+labels_fariss <- c(
+  "theta_mean_inv" = "Repression (Fariss)",
+  "z.logpop" = "Tot. Population (log)",
+  "z.pop_rural" = "Rural Population (% of total)",
+  "z.v2x_ex_military" = "Military Control",
+  "z.v2x_ex_hereditary" = "Hereditary Control",
+  "z.loggdp" = "GDP pc (log)",
+  "z.gdppc_growth" = "GDP pc growth",
+  "z.lognat" = "Natural Resources (% of GDP)",
+  "z.trade" = "Trade (% of GDP)",
+  "z.v2cltrnslw" = "Legal Transparency",
+  "z.state_dummy" = "State-owned ISP",
+  "(Intercept)" = "Constant"
+)
+
+# Running the models
+lm_all2 <- lapply(controls_list, function(x) Regression_FUN("share_for_maj", "theta_mean_inv", x, df))
+lm_aut2 <- lapply(controls_list, function(x) Regression_FUN("share_aut", "theta_mean_inv", x, df))
+lm_dem2 <- lapply(controls_list, function(x) Regression_FUN("share_dem", "theta_mean_inv", x, df))
+
+# Combine all models into one list
+lm_all2 <- c(lm_all2, lm_aut2, lm_dem2)
+
+# Create a data frame for add_rows with the correct number of columns (6 columns for 6 models)
+# Since we need a total of 7 columns, we should add blank columns for the empty space
+# Adjusting the add_rows to have 7 columns
+add_rows_data <- data.frame(
+  " " = c("Year FE", "Country FE"),  # Row labels
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes"
+)
+
+# Generate the table with flextable
+tab <- modelsummary(models = lm_all2,
+                    coef_map = labels_fariss,
+                    estimate = "{estimate} ({std.error}){stars}",  # Display coefficient with stars
+                    statistic = NULL,
+                    gof_omit = "F|ser|AIC|BIC|RMSE|Log\\.Lik",  # Omit specific GOF stats
+                    add_rows = add_rows_data,
+                    output = "flextable")
+
+tab <- tab %>%
+  flextable::add_header_row(values = c(" ", "Share of Foreign ISPs", "Share of Foreign Autocratic ISPs", "Share of Foreign Democratic ISPs"), colwidths = c(1, 2, 2, 2)) %>%
+  # Apply smaller font size to headers
+  flextable::fontsize(size = 9, part = "header") %>%
+  # Apply smaller font size to the body of the table (optional)
+  flextable::fontsize(size = 7, part = "body") %>%
+  flextable::font(fontname = "Times New Roman", part = "all") 
+fittedtab <- function(tab, pgwidth = 6.5){
+  ft_out <- tab %>% autofit()
+  ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
+  return(ft_out)
+}
+tab <- fittedtab(tab)
+tab
+
+```
+\newpage
+
+# Interaction between repression and state ownership
+
+
+```{r}
+#| label: fig-ia
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Marginal effects of repression on the percentage of shares held by foreign(-autocratic) investors for countries with no or at least one state-owned ISP with 90% confidence intervals using the ggeffects() R function to calculate predicted shares; we use inverted scores such that higher values indicate higher levels of repression; all variables included in the model are z-standardized to facilitate comparison."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '70%'
+#| dpi: 300
+#| fig-width: 8.5
+#| fig-height: 4.5
+
+library(dplyr)
+library(tidyverse)
+library(ggpubr)
+library(ggplot2)
+library(broom)
+library(ggeffects)
+
+### read dataset
+#setwd("C:/Users/garbe/Lisa/R Code/authoritarian_collaboration")
+df <- read.csv("data/data_aggr_country_reg.csv")
+
+#### Coefficient Plot for Fariss analysis
+
+#####  Interaction Effects ####
+# Run models with interaction effects
+
+lm2_aut_ia <- lm(share_aut ~  theta_mean_inv*state_dummy + logpop + pop_rural+ v2x_ex_military + v2x_ex_hereditary  + loggdp + gdppc_growth + lognat + trade + v2cltrnslw  + cc + year_factor, data = df)
+
+lm2_for_ia <- lm(share_for_maj ~  theta_mean_inv*state_dummy + logpop + pop_rural+ v2x_ex_military + v2x_ex_hereditary  + loggdp + gdppc_growth + lognat + trade + v2cltrnslw  + cc + year_factor, data = df)
+
+aut_ia_pred <- ggeffects::ggeffect(lm2_aut_ia, ci.lvl = 0.90,terms = c("theta_mean_inv", "state_dummy"))
+aut_ia_pred$state_owned <- factor(aut_ia_pred$group, levels=c(0,1), labels=c("None", "At least one"))
+
+linetype = rep(c("dotted", "solid", "dashed"),2)
+aut_ia_plot <- ggplot(aut_ia_pred, aes(x = x,y = predicted, group = state_owned)) +
+  geom_line(aes(linetype = state_owned, col = state_owned), size =1) +
+  theme_classic()+
+  scale_color_manual(name = "State owned ISP", values = c("grey30","grey30")) +
+  scale_linetype_manual(name = "State owned ISP",values = linetype) +
+  theme(axis.title = element_text(size = 9),
+        axis.text = element_text(size = 8,colour="grey30"), 
+        text=element_text(colour = "grey30"),
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 7), 
+        legend.position = "right")+
+  labs(y = "Predicted shares", x = "Repression (Farris)")+
+  ggtitle("B. Predicted Foreign-Autocratic Shares")+
+  coord_cartesian(ylim=c(0,1))+
+  #scale_y_continuous(breaks=c(0,1))+
+  geom_ribbon(aes(ymin=conf.low,ymax=conf.high), alpha=0.1)
+
+for_ia_pred <- ggeffects::ggeffect(lm2_for_ia, ci.lvl = 0.90,terms = c("theta_mean_inv", "state_dummy"))
+for_ia_pred$state_owned <- factor(for_ia_pred$group, levels=c(0,1), labels=c("None", "At least one"))
+
+linetype = rep(c("dotted", "solid", "dashed"),2)
+for_ia_plot <- ggplot(for_ia_pred, aes(x = x,y = predicted, group = state_owned)) +
+  geom_line(aes(linetype = state_owned, col = state_owned), size =1) +
+  theme_classic()+
+  scale_color_manual(name = "State owned ISP", values = c("grey30","grey30")) +
+  scale_linetype_manual(name = "State owned ISP",values = linetype) +
+  theme(axis.title = element_text(size = 9),
+        axis.text = element_text(size = 8,colour="grey30"), 
+        text=element_text(colour = "grey30"),
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 7), 
+        legend.position = "right")+
+  labs(y = "Predicted shares", x = "Repression (Farris)")+
+  ggtitle("A. Predicted Foreign Shares")+
+  coord_cartesian(ylim=c(0,1))+
+  #scale_y_continuous(breaks=c(0,1))+
+  geom_ribbon(aes(ymin=conf.low,ymax=conf.high), alpha=0.1)
+
+figure_IA <- ggarrange(for_ia_plot, aut_ia_plot,
+                                 ncol = 2, nrow = 1,
+                                 #widths = c(0.6, 1),
+                                 common.legend = TRUE,
+                       legend = "bottom")
+figure_IA
+
+
+```
+
+
+# Alternative measures of repression
+
+```{r}
+#| label: tbl-pts
+#| echo: false
+#| message: false
+#| warning: false
+#| tbl-cap: "Regression Analysis (PTS)"
+#| tbl-align: center
+
+### read dataset
+df <- read.csv("../data/data_aggr_country_reg.csv")
+
+# Function to run multiple regression models
+Regression_FUN <- function(outcome, variables, controls, data){
+  if (controls == "None") {
+    f <- paste0(outcome, "~ ", variables, " + factor(cc) + factor(year)")
+  } else if (controls == "All") {
+    f <- paste0(outcome, "~ ", variables, " + z.logpop + z.pop_rural + z.v2x_ex_military + z.v2x_ex_hereditary + z.loggdp + z.gdppc_growth + z.lognat + z.trade + z.v2cltrnslw + z.state_dummy + factor(cc) + factor(year)")
+  }
+  mod.main <- lm(as.formula(f), data = data)
+  return(mod.main)  # Returning only the model object
+}
+
+controls_list <- c("None","All")
+
+# defining labels
+labels_pts <- c(
+  "PTS_S" = "Repression (PTS)",
+  "z.logpop" = "Tot. Population (log)",
+  "z.pop_rural" = "Rural Population (% of total)",
+  "z.v2x_ex_military" = "Military Control",
+  "z.v2x_ex_hereditary" = "Hereditary Control",
+  "z.loggdp" = "GDP pc (log)",
+  "z.gdppc_growth" = "GDP pc growth",
+  "z.lognat" = "Natural Resources (% of GDP)",
+  "z.trade" = "Trade (% of GDP)",
+  "z.v2cltrnslw" = "Legal Transparency",
+  "z.state_dummy" = "State-owned ISP",
+  "(Intercept)" = "Constant"
+)
+
+# Running the models
+lm_all <- lapply(controls_list, function(x) Regression_FUN("share_for_maj", "PTS_S", x, df))
+lm_aut <- lapply(controls_list, function(x) Regression_FUN("share_aut", "PTS_S", x, df))
+lm_dem <- lapply(controls_list, function(x) Regression_FUN("share_dem", "PTS_S", x, df))
+
+# Combine all models into one list
+lm_all <- c(lm_all, lm_aut, lm_dem)
+
+# Create a data frame for add_rows with the correct number of columns (6 columns for 6 models)
+# Since we need a total of 7 columns, we should add blank columns for the empty space
+# Adjusting the add_rows to have 7 columns
+add_rows_data <- data.frame(
+  " " = c("Year FE", "Country FE"),  # Row labels
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes"
+)
+
+# Generate the table with flextable
+tab <- modelsummary(models = lm_all,
+                    coef_map = labels_pts,
+                    estimate = "{estimate} ({std.error}){stars}",  # Display coefficient with stars
+                    statistic = NULL,
+                    gof_omit = "F|ser|AIC|BIC|RMSE|Log\\.Lik",  # Omit specific GOF stats
+                    add_rows = add_rows_data,
+                    output = "flextable")
+
+tab <- tab %>%
+  flextable::add_header_row(values = c(" ", "Share of Foreign ISPs", "Share of Foreign Autocratic ISPs", "Share of Foreign Democratic ISPs"), colwidths = c(1, 2, 2, 2)) %>%
+  # Apply smaller font size to headers
+  flextable::fontsize(size = 9, part = "header") %>%
+  # Apply smaller font size to the body of the table (optional)
+  flextable::fontsize(size = 7, part = "body") %>%
+  flextable::font(fontname = "Times New Roman", part = "all") 
+fittedtab <- function(tab, pgwidth = 6.5){
+  ft_out <- tab %>% autofit()
+  ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
+  return(ft_out)
+}
+tab <- fittedtab(tab)
+tab
+
+```
+
+\newpage
+```{r}
+#| label: tbl-vdem
+#| echo: false
+#| message: false
+#| warning: false
+#| tbl-cap: "Regression Analysis (V-Dem)"
+#| tbl-align: center
+#| 
+#### Regression models with VDEM
+
+
+# defining labels
+labels_vdem <- c(
+  "v2clkill_inv" = "Repression (V-Dem)",
+  "z.logpop" = "Tot. Population (log)",
+  "z.pop_rural" = "Rural Population (% of total)",
+  "z.v2x_ex_military" = "Military Control",
+  "z.v2x_ex_hereditary" = "Hereditary Control",
+  "z.loggdp" = "GDP pc (log)",
+  "z.gdppc_growth" = "GDP pc growth",
+  "z.lognat" = "Natural Resources (% of GDP)",
+  "z.trade" = "Trade (% of GDP)",
+  "z.v2cltrnslw" = "Legal Transparency",
+  "z.state_dummy" = "State-owned ISP",
+  "(Intercept)" = "Constant"
+)
+
+# Running the models
+lm_all3 <- lapply(controls_list, function(x) Regression_FUN("share_for_maj", "v2clkill_inv", x, df))
+lm_aut3 <- lapply(controls_list, function(x) Regression_FUN("share_aut", "v2clkill_inv", x, df))
+lm_dem3 <- lapply(controls_list, function(x) Regression_FUN("share_dem", "v2clkill_inv", x, df))
+
+# Combine all models into one list
+lm_all3 <- c(lm_all3, lm_aut3, lm_dem3)
+
+# Create a data frame for add_rows with the correct number of columns (6 columns for 6 models)
+# Since we need a total of 7 columns, we should add blank columns for the empty space
+# Adjusting the add_rows to have 7 columns
+add_rows_data <- data.frame(
+  " " = c("Year FE", "Country FE"),  # Row labels
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes"
+)
+
+# Generate the table with flextable
+tab <- modelsummary(models = lm_all3,
+                    coef_map = labels_vdem,
+                    estimate = "{estimate} ({std.error}){stars}",  # Display coefficient with stars
+                    statistic = NULL,
+                    gof_omit = "F|ser|AIC|BIC|RMSE|Log\\.Lik",  # Omit specific GOF stats
+                    add_rows = add_rows_data,
+                    output = "flextable")
+
+tab <- tab %>%
+  flextable::add_header_row(values = c(" ", "Share of Foreign ISPs", "Share of Foreign Autocratic ISPs", "Share of Foreign Democratic ISPs"), colwidths = c(1, 2, 2, 2)) %>%
+  # Apply smaller font size to headers
+  flextable::fontsize(size = 9, part = "header") %>%
+  # Apply smaller font size to the body of the table (optional)
+  flextable::fontsize(size = 7, part = "body") %>%
+  flextable::font(fontname = "Times New Roman", part = "all") 
+
+tab <- fittedtab(tab)
+tab
+```
+
+\newpage
+# Lagged repression indicator
+## Lagged LHRPS
+
+```{r}
+#| label: tbl-fariss-lag1
+#| echo: false
+#| message: false
+#| warning: false
+#| tbl-cap: "Regression Analysis Fariss (1 Year Lag)"
+#| tbl-align: center
+
+
+# Load packages
+library(dplyr)
+library(tidyverse)
+library(lmtest)
+library(sandwich)
+library(modelsummary)
+library(flextable)
+library(kableExtra)
+
+
+# defining labels
+labels_fariss <- c(
+  "theta_mean_inv_before" = "Repression (Fariss)",
+  "z.logpop" = "Tot. Population (log)",
+  "z.pop_rural" = "Rural Population (% of total)",
+  "z.v2x_ex_military" = "Military Control",
+  "z.v2x_ex_hereditary" = "Hereditary Control",
+  "z.loggdp" = "GDP pc (log)",
+  "z.gdppc_growth" = "GDP pc growth",
+  "z.lognat" = "Natural Resources (% of GDP)",
+  "z.trade" = "Trade (% of GDP)",
+  "z.v2cltrnslw" = "Legal Transparency",
+  "z.state_dummy" = "State-owned ISP",
+  "(Intercept)" = "Constant"
+)
+
+# Running the models
+lm_all2 <- lapply(controls_list, function(x) Regression_FUN("share_for_maj", "theta_mean_inv_before", x, df))
+lm_aut2 <- lapply(controls_list, function(x) Regression_FUN("share_aut", "theta_mean_inv_before", x, df))
+lm_dem2 <- lapply(controls_list, function(x) Regression_FUN("share_dem", "theta_mean_inv_before", x, df))
+
+# Combine all models into one list
+lm_all2 <- c(lm_all2, lm_aut2, lm_dem2)
+
+# Create a data frame for add_rows with the correct number of columns (6 columns for 6 models)
+# Since we need a total of 7 columns, we should add blank columns for the empty space
+# Adjusting the add_rows to have 7 columns
+add_rows_data <- data.frame(
+  " " = c("Year FE", "Country FE"),  # Row labels
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes"
+)
+
+# Generate the table with flextable
+tab <- modelsummary(models = lm_all2,
+                    coef_map = labels_fariss,
+                    estimate = "{estimate} ({std.error}){stars}",  # Display coefficient with stars
+                    statistic = NULL,
+                    gof_omit = "F|ser|AIC|BIC|RMSE|Log\\.Lik",  # Omit specific GOF stats
+                    add_rows = add_rows_data,
+                    output = "flextable")
+
+tab <- tab %>%
+  flextable::add_header_row(values = c(" ", "Share of Foreign ISPs", "Share of Foreign Autocratic ISPs", "Share of Foreign Democratic ISPs"), colwidths = c(1, 2, 2, 2)) %>%
+  # Apply smaller font size to headers
+  flextable::fontsize(size = 9, part = "header") %>%
+  # Apply smaller font size to the body of the table (optional)
+  flextable::fontsize(size = 7, part = "body") %>%
+  flextable::font(fontname = "Times New Roman", part = "all") 
+tab <- fittedtab(tab)
+tab
+
+```
+
+
+```{r}
+#| label: tbl-fariss-lag2
+#| echo: false
+#| message: false
+#| warning: false
+#| tbl-cap: "Regression Analysis Fariss (2 Year Lag)"
+#| tbl-align: center
+
+
+#### Lag by two years ####
+
+# defining labels
+labels_fariss <- c(
+  "theta_mean_inv_before2" = "Repression (Fariss)",
+  "z.logpop" = "Tot. Population (log)",
+  "z.pop_rural" = "Rural Population (% of total)",
+  "z.v2x_ex_military" = "Military Control",
+  "z.v2x_ex_hereditary" = "Hereditary Control",
+  "z.loggdp" = "GDP pc (log)",
+  "z.gdppc_growth" = "GDP pc growth",
+  "z.lognat" = "Natural Resources (% of GDP)",
+  "z.trade" = "Trade (% of GDP)",
+  "z.v2cltrnslw" = "Legal Transparency",
+  "z.state_dummy" = "State-owned ISP",
+  "(Intercept)" = "Constant"
+)
+
+# Running the models
+lm_all2 <- lapply(controls_list, function(x) Regression_FUN("share_for_maj", "theta_mean_inv_before2", x, df))
+lm_aut2 <- lapply(controls_list, function(x) Regression_FUN("share_aut", "theta_mean_inv_before2", x, df))
+lm_dem2 <- lapply(controls_list, function(x) Regression_FUN("share_dem", "theta_mean_inv_before2", x, df))
+
+# Combine all models into one list
+lm_all2 <- c(lm_all2, lm_aut2, lm_dem2)
+
+# Create a data frame for add_rows with the correct number of columns (6 columns for 6 models)
+# Since we need a total of 7 columns, we should add blank columns for the empty space
+# Adjusting the add_rows to have 7 columns
+add_rows_data <- data.frame(
+  " " = c("Year FE", "Country FE"),  # Row labels
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes"
+)
+
+# Generate the table with flextable
+tab <- modelsummary(models = lm_all2,
+                    coef_map = labels_fariss,
+                    estimate = "{estimate} ({std.error}){stars}",  # Display coefficient with stars
+                    statistic = NULL,
+                    gof_omit = "F|ser|AIC|BIC|RMSE|Log\\.Lik",  # Omit specific GOF stats
+                    add_rows = add_rows_data,
+                    output = "flextable")
+
+tab <- tab %>%
+  flextable::add_header_row(values = c(" ", "Share of Foreign ISPs", "Share of Foreign Autocratic ISPs", "Share of Foreign Democratic ISPs"), colwidths = c(1, 2, 2, 2)) %>%
+  # Apply smaller font size to headers
+  flextable::fontsize(size = 9, part = "header") %>%
+  # Apply smaller font size to the body of the table (optional)
+  flextable::fontsize(size = 7, part = "body") %>%
+  flextable::font(fontname = "Times New Roman", part = "all") 
+fittedtab <- function(tab, pgwidth = 6.5){
+  ft_out <- tab %>% autofit()
+  ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
+  return(ft_out)
+}
+tab <- fittedtab(tab)
+tab
+
+
+```
+
+## Lagged PTS
+
+```{r}
+#| label: tbl-pts-lag1
+#| echo: false
+#| message: false
+#| warning: false
+#| tbl-cap: "Regression Analysis PTS (1 Year Lag)"
+#| tbl-align: center
+
+
+# Load packages
+library(dplyr)
+library(tidyverse)
+library(lmtest)
+library(sandwich)
+library(modelsummary)
+library(flextable)
+library(kableExtra)
+
+
+# defining labels
+labels_pts <- c(
+  "PTS_S_before" = "Repression (PTS)",
+  "z.logpop" = "Tot. Population (log)",
+  "z.pop_rural" = "Rural Population (% of total)",
+  "z.v2x_ex_military" = "Military Control",
+  "z.v2x_ex_hereditary" = "Hereditary Control",
+  "z.loggdp" = "GDP pc (log)",
+  "z.gdppc_growth" = "GDP pc growth",
+  "z.lognat" = "Natural Resources (% of GDP)",
+  "z.trade" = "Trade (% of GDP)",
+  "z.v2cltrnslw" = "Legal Transparency",
+  "z.state_dummy" = "State-owned ISP",
+  "(Intercept)" = "Constant"
+)
+
+# Running the models
+lm_all <- lapply(controls_list, function(x) Regression_FUN("share_for_maj", "PTS_S_before", x, df))
+lm_aut <- lapply(controls_list, function(x) Regression_FUN("share_aut", "PTS_S_before", x, df))
+lm_dem <- lapply(controls_list, function(x) Regression_FUN("share_dem", "PTS_S_before", x, df))
+
+# Combine all models into one list
+lm_all <- c(lm_all, lm_aut, lm_dem)
+
+# Create a data frame for add_rows with the correct number of columns (6 columns for 6 models)
+# Since we need a total of 7 columns, we should add blank columns for the empty space
+# Adjusting the add_rows to have 7 columns
+add_rows_data <- data.frame(
+  " " = c("Year FE", "Country FE"),  # Row labels
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes"
+)
+
+# Generate the table with flextable
+tab <- modelsummary(models = lm_all,
+                    coef_map = labels_pts,
+                    estimate = "{estimate} ({std.error}){stars}",  # Display coefficient with stars
+                    statistic = NULL,
+                    gof_omit = "F|ser|AIC|BIC|RMSE|Log\\.Lik",  # Omit specific GOF stats
+                    add_rows = add_rows_data,
+                    output = "flextable")
+
+tab <- tab %>%
+  flextable::add_header_row(values = c(" ", "Share of Foreign ISPs", "Share of Foreign Autocratic ISPs", "Share of Foreign Democratic ISPs"), colwidths = c(1, 2, 2, 2)) %>%
+  # Apply smaller font size to headers
+  flextable::fontsize(size = 9, part = "header") %>%
+  # Apply smaller font size to the body of the table (optional)
+  flextable::fontsize(size = 7, part = "body") %>%
+  flextable::font(fontname = "Times New Roman", part = "all") 
+fittedtab <- function(tab, pgwidth = 6.5){
+  ft_out <- tab %>% autofit()
+  ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
+  return(ft_out)
+}
+tab <- fittedtab(tab)
+tab
+
+
+```
+
+\newpage
+
+```{r}
+#| label: tbl-pts-lag2
+#| echo: false
+#| message: false
+#| warning: false
+#| tbl-cap: "Regression Analysis PTS (2 Year Lag)"
+#| tbl-align: center
+
+
+# defining labels
+labels_pts <- c(
+  "PTS_S_before2" = "Repression (PTS)",
+  "z.logpop" = "Tot. Population (log)",
+  "z.pop_rural" = "Rural Population (% of total)",
+  "z.v2x_ex_military" = "Military Control",
+  "z.v2x_ex_hereditary" = "Hereditary Control",
+  "z.loggdp" = "GDP pc (log)",
+  "z.gdppc_growth" = "GDP pc growth",
+  "z.lognat" = "Natural Resources (% of GDP)",
+  "z.trade" = "Trade (% of GDP)",
+  "z.v2cltrnslw" = "Legal Transparency",
+  "z.state_dummy" = "State-owned ISP",
+  "(Intercept)" = "Constant"
+)
+
+# Running the models
+lm_all <- lapply(controls_list, function(x) Regression_FUN("share_for_maj", "PTS_S_before2", x, df))
+lm_aut <- lapply(controls_list, function(x) Regression_FUN("share_aut", "PTS_S_before2", x, df))
+lm_dem <- lapply(controls_list, function(x) Regression_FUN("share_dem", "PTS_S_before2", x, df))
+
+# Combine all models into one list
+lm_all <- c(lm_all, lm_aut, lm_dem)
+
+# Create a data frame for add_rows with the correct number of columns (6 columns for 6 models)
+# Since we need a total of 7 columns, we should add blank columns for the empty space
+# Adjusting the add_rows to have 7 columns
+add_rows_data <- data.frame(
+  " " = c("Year FE", "Country FE"),  # Row labels
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes"
+)
+
+# Generate the table with flextable
+tab <- modelsummary(models = lm_all,
+                    coef_map = labels_pts,
+                    estimate = "{estimate} ({std.error}){stars}",  # Display coefficient with stars
+                    statistic = NULL,
+                    gof_omit = "F|ser|AIC|BIC|RMSE|Log\\.Lik",  # Omit specific GOF stats
+                    add_rows = add_rows_data,
+                    output = "flextable")
+
+tab <- tab %>%
+  flextable::add_header_row(values = c(" ", "Share of Foreign ISPs", "Share of Foreign Autocratic ISPs", "Share of Foreign Democratic ISPs"), colwidths = c(1, 2, 2, 2)) %>%
+  # Apply smaller font size to headers
+  flextable::fontsize(size = 9, part = "header") %>%
+  # Apply smaller font size to the body of the table (optional)
+  flextable::fontsize(size = 7, part = "body") %>%
+  flextable::font(fontname = "Times New Roman", part = "all") 
+fittedtab <- function(tab, pgwidth = 6.5){
+  ft_out <- tab %>% autofit()
+  ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
+  return(ft_out)
+}
+tab <- fittedtab(tab)
+tab
+
+```
+
+## Lagged V-Dem
+
+```{r}
+#| label: tbl-vdem-lag1
+#| echo: false
+#| message: false
+#| warning: false
+#| tbl-cap: "Regression Analysis V-Dem (1 Year Lag)"
+#| tbl-align: center
+
+
+
+# defining labels
+labels_vdem <- c(
+  "v2clkill_before" = "Repression (V-Dem)",
+  "z.logpop" = "Tot. Population (log)",
+  "z.pop_rural" = "Rural Population (% of total)",
+  "z.v2x_ex_military" = "Military Control",
+  "z.v2x_ex_hereditary" = "Hereditary Control",
+  "z.loggdp" = "GDP pc (log)",
+  "z.gdppc_growth" = "GDP pc growth",
+  "z.lognat" = "Natural Resources (% of GDP)",
+  "z.trade" = "Trade (% of GDP)",
+  "z.v2cltrnslw" = "Legal Transparency",
+  "z.state_dummy" = "State-owned ISP",
+  "(Intercept)" = "Constant"
+)
+
+# Running the models
+lm_all3 <- lapply(controls_list, function(x) Regression_FUN("share_for_maj", "v2clkill_before", x, df))
+lm_aut3 <- lapply(controls_list, function(x) Regression_FUN("share_aut", "v2clkill_before", x, df))
+lm_dem3 <- lapply(controls_list, function(x) Regression_FUN("share_dem", "v2clkill_before", x, df))
+
+# Combine all models into one list
+lm_all3 <- c(lm_all3, lm_aut3, lm_dem3)
+
+# Create a data frame for add_rows with the correct number of columns (6 columns for 6 models)
+# Since we need a total of 7 columns, we should add blank columns for the empty space
+# Adjusting the add_rows to have 7 columns
+add_rows_data <- data.frame(
+  " " = c("Year FE", "Country FE"),  # Row labels
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes"
+)
+
+# Generate the table with flextable
+tab <- modelsummary(models = lm_all3,
+                    coef_map = labels_vdem,
+                    estimate = "{estimate} ({std.error}){stars}",  # Display coefficient with stars
+                    statistic = NULL,
+                    gof_omit = "F|ser|AIC|BIC|RMSE|Log\\.Lik",  # Omit specific GOF stats
+                    add_rows = add_rows_data,
+                    output = "flextable")
+
+tab <- tab %>%
+  flextable::add_header_row(values = c(" ", "Share of Foreign ISPs", "Share of Foreign Autocratic ISPs", "Share of Foreign Democratic ISPs"), colwidths = c(1, 2, 2, 2)) %>%
+  # Apply smaller font size to headers
+  flextable::fontsize(size = 9, part = "header") %>%
+  # Apply smaller font size to the body of the table (optional)
+  flextable::fontsize(size = 7, part = "body") %>%
+  flextable::font(fontname = "Times New Roman", part = "all") 
+
+tab <- fittedtab(tab)
+tab
+```
+
+
+```{r}
+#| label: tbl-vdem-lag2
+#| echo: false
+#| message: false
+#| warning: false
+#| tbl-cap: "Regression Analysis V-Dem (2 Year Lag)"
+#| tbl-align: center
+
+
+
+# defining labels
+labels_vdem <- c(
+  "v2clkill_before2" = "Repression (V-Dem)",
+  "z.logpop" = "Tot. Population (log)",
+  "z.pop_rural" = "Rural Population (% of total)",
+  "z.v2x_ex_military" = "Military Control",
+  "z.v2x_ex_hereditary" = "Hereditary Control",
+  "z.loggdp" = "GDP pc (log)",
+  "z.gdppc_growth" = "GDP pc growth",
+  "z.lognat" = "Natural Resources (% of GDP)",
+  "z.trade" = "Trade (% of GDP)",
+  "z.v2cltrnslw" = "Legal Transparency",
+  "z.state_dummy" = "State-owned ISP",
+  "(Intercept)" = "Constant"
+)
+
+# Running the models
+lm_all3 <- lapply(controls_list, function(x) Regression_FUN("share_for_maj", "v2clkill_before2", x, df))
+lm_aut3 <- lapply(controls_list, function(x) Regression_FUN("share_aut", "v2clkill_before2", x, df))
+lm_dem3 <- lapply(controls_list, function(x) Regression_FUN("share_dem", "v2clkill_before2", x, df))
+
+# Combine all models into one list
+lm_all3 <- c(lm_all3, lm_aut3, lm_dem3)
+
+# Create a data frame for add_rows with the correct number of columns (6 columns for 6 models)
+# Since we need a total of 7 columns, we should add blank columns for the empty space
+# Adjusting the add_rows to have 7 columns
+add_rows_data <- data.frame(
+  " " = c("Year FE", "Country FE"),  # Row labels
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes",
+  "Yes"
+)
+
+# Generate the table with flextable
+tab <- modelsummary(models = lm_all3,
+                    coef_map = labels_vdem,
+                    estimate = "{estimate} ({std.error}){stars}",  # Display coefficient with stars
+                    statistic = NULL,
+                    gof_omit = "F|ser|AIC|BIC|RMSE|Log\\.Lik",  # Omit specific GOF stats
+                    add_rows = add_rows_data,
+                    output = "flextable")
+
+tab <- tab %>%
+  flextable::add_header_row(values = c(" ", "Share of Foreign ISPs", "Share of Foreign Autocratic ISPs", "Share of Foreign Democratic ISPs"), colwidths = c(1, 2, 2, 2)) %>%
+  # Apply smaller font size to headers
+  flextable::fontsize(size = 9, part = "header") %>%
+  # Apply smaller font size to the body of the table (optional)
+  flextable::fontsize(size = 7, part = "body") %>%
+  flextable::font(fontname = "Times New Roman", part = "all") 
+
+tab <- fittedtab(tab)
+tab
+```
+
+\newpage
+
+# Distribution of treatment variable 
+
+
+```{r}
+#| label: fig-treat
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Distribution of the treatment variable across cases and time. White fields are missing data."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '80%'
+#| dpi: 300
+# illustrate treatment distribution across units and time
+treatment_distribution <- DisplayTreatment(unit.id = "cc",
+                 time.id = "year", 
+                 xlab = "", ylab = "", title = "Distribution of Treatment Variable",
+                 color.of.treated = "#CC79A7", color.of.untreated = "#21908CFF",
+                 treatment = "treatment_aut", data = df_match_aut_treat, dense.plot = FALSE,
+                 legend.labels = c("Untreated", "Treated"),
+                 legend.position = "bottom",
+                 y.size = 5, x.size = 5)
+treatment_distribution
+```
+
+
+# Example of matched set
+
+
+![Example of a matched set with lag = 2 for the treatment "foreign-autocratic investment". The example illustrates that Equatorial Guinea, prior to being treated in 2009, showed a similar non-treatment history in 2008 and 2007 with 8 other countries in our dataset.](figures/matched_set.png){#fig-matched_set width="50%"}
+
+\newpage
+
+# Common support plot
+
+```{r}
+#| label: fig-common
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Overlap in the distributions of the covariates' propensity scores between treated and control groups (common support)."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '50%'
+#| dpi: 300
+
+
+library(dplyr)
+library(tidyverse)
+library(texreg)
+library(PanelMatch)
+library(ERT)
+library(vdemdata)
+library(ggpubr)
+
+rm(list=ls())
+# read dataset
+df_all <- read.csv("data/data_aggr_country.csv")
+
+# load ERT data
+ert <- ERT::get_eps()
+ert <- ert %>% 
+  select(country_text_id, year, aut_ep_id, aut_ep) 
+
+# load vdem data as we need a reliable merging variable for conflict data below (COWcode)
+vdem <- vdemdata::vdem %>% 
+  select(year, country_text_id, COWcode) 
+
+# load conflict data
+# UCDP/PRIO Armed Conflict Dataset version 23.1 (country year)
+ucdp <- readRDS("data/UcdpPrioConflict_v23_1.rds")
+# internal conflicts
+# here we take UCDP data as it gives the amount of conflicts in a year 
+# and not just yes/no as the conflict variable in vdem
+# prepare UCDP data: interstate conflict SIDE A
+intra <- ucdp %>% 
+  filter(type_of_conflict == 3) %>% # to find intrastate conflicts, no international involvement
+  select(COWcode = gwno_a, year, conflict_id, side_b) %>% # first side A
+  group_by(COWcode, year) %>% 
+  summarise(intra_conflicts = length(conflict_id),
+            opponent_intra =  paste0(side_b, collapse = ", ")) %>% # number of conflicts
+  mutate(COWcode = as.numeric(COWcode),
+         conflict = intra_conflicts) %>% 
+  ungroup() %>% 
+  drop_na()
+intra <- intra %>%
+  select(COWcode, year, conflict) 
+
+# merge with df_all
+ert <- left_join(df_all, ert, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+vdem <- left_join(ert, vdem, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+df_all <- left_join(vdem, intra, by = c("COWcode", "year"))%>% 
+  drop_na(COWcode)
+
+# recode conflict variables, if NA then 0
+df_all <- df_all %>% 
+  mutate(conflict = ifelse(is.na(conflict), 0, conflict))
+
+# subset and rename 
+df_sub <- df_all %>%
+  select(cc, year, v2x_regime, share_for_maj, share_aut, share_dem, state_dummy, number_comp,
+         pop_total, gdppc, gdppc_growth, 
+         v2smgovfilprc, v2smgovshut, v2smgovsmmon,
+         aut_ep, v2x_polyarchy, coups = e_pt_coup, conflict, theta_mean_inv) 
+
+# prepare data, only autocracies
+df <- subset(df_sub, df_sub$v2x_regime < 2)
+
+# treatment: country is treated if at least  one ISP is majority-owned by foreign-autocratic shareholder
+df$treatment_aut <- ifelse(df$share_aut > 0,1,0)
+
+# take log of gdp and pop data
+df <- df %>% 
+  mutate(pop_log = log(pop_total),
+         gdppc_log = log(gdppc)) 
+
+# let's flip the Internet censorship and shutdown variables so results are more intuitive
+df <- df %>%
+  mutate(censor = 0-v2smgovfilprc,
+         shut = 0-v2smgovshut,
+         monitor = 0-v2smgovsmmon,
+         onlinerep = pmax(censor, shut, monitor)) # let's build a variable on online repression which takes the max of censor, shut, monitor (add control later on)
+
+# prepare dataset for PanelMatch packacke requirements
+# we need a numerical country identifier 
+df_match <- df %>%
+  group_by(cc) %>%
+  mutate(index = cur_group_id())
+
+# check for common support
+df_match_common <- df_match %>%
+  drop_na()
+
+# fit a logistic regression model to estimate propensity scores
+ps_model <- glm(treatment_aut ~ lag(pop_log) + lag(gdppc_log) +
+                  lag(gdppc_growth) + lag(aut_ep) + lag(state_dummy) + lag(number_comp) +
+                  lag(v2x_polyarchy) +
+                  lag(coups) + lag(conflict) + lag(theta_mean_inv), data = df_match_common, family = binomial, na.action = na.exclude)
+
+# extract propensity scores
+df_match_common$propensity_score <- predict(ps_model, type = "response")
+
+library(ggplot2)
+# Plot the propensity scores for the treated and control units to inspect the overlap
+ggplot(df_match_common, aes(x = propensity_score, fill = as.factor(treatment_aut))) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Propensity Score Distribution", x = "Propensity Score", fill = "Treatment Status")
+```
+
+
+# Diagnostic plots 
+
+```{r, fig.width=12, fig.height=7}
+#| label: fig-covbal
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Diagnostic plots to see how covariate balance improves due to various refinement techniques during matching with the treatment 'foreign-autocratic investment'. Propensity score weighting achieves the best balance. The covariate 'Coups' was removed due to little variation."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '90%'
+#| dpi: 300
+
+#### 8) Diagnostic plots on covariate balance
+
+# subset data
+df_match_aut_treat <- df_match %>%
+  select(cc, year, index, treatment_aut, onlinerep, state_dummy, number_comp,
+         pop_log, gdppc_log, gdppc_growth, aut_ep, v2x_polyarchy, coups, conflict, theta_mean_inv) %>%
+  mutate(year = as.integer(year),
+         index = as.integer(index))%>%
+  as.data.frame()
+
+# deselect cc as not integer 
+df_match_aut <- df_match_aut_treat %>%
+  select(-cc) %>% 
+  drop_na()
+
+
+#### foreign investment from autocratic countries (no refinement) ####
+PM.results.none <- PanelMatch(lag = 2, time.id = "year", unit.id = "index",treatment = "treatment_aut",
+                                  refinement.method = "none", 
+                                  data = df_match_aut, 
+                                  qoi = "att", 
+                                  outcome.var = "onlinerep",
+                                  lead = 0:3)
+
+#### foreign investment from autocratic countries (matching) ####
+PM.results.psmatch <- PanelMatch(lag = 2, time.id = "year", unit.id = "index",treatment = "treatment_aut",
+                                  refinement.method = "ps.match", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", 
+                                  outcome.var = "onlinerep",
+                                  lead = 0:3)
+
+#### foreign investment from autocratic countries (mahalanobis) ####
+PM.results.maha <- PanelMatch(lag = 2, time.id = "year", unit.id = "index",treatment = "treatment_aut",
+                                  refinement.method = "mahalanobis", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", 
+                                  outcome.var = "onlinerep",
+                                  lead = 0:3)
+
+# propensity score weighting ##
+PM.results.psweight <- PanelMatch(lag = 2, time.id = "year", unit.id = "index", 
+                                  treatment = "treatment_aut", refinement.method = "ps.weight", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + 
+                                    I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + 
+                                    I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", outcome.var = "onlinerep",
+                                  lead = 0:3, placebo.test = TRUE)
+
+# get point estimates
+PE.results.psweight <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.9)
+
+
+# check covariate balance before and after refinement 
+none <- get_covariate_balance(PM.results.none$att,
+                              data = df_match_aut,
+                              covariates = c("state_dummy", "number_comp", "pop_log", "gdppc_log", "gdppc_growth", "aut_ep", 
+                                             "v2x_polyarchy", "coups", "conflict", "theta_mean_inv"),
+                              plot = FALSE)
+
+ maha <- get_covariate_balance(PM.results.maha$att,
+                               data = df_match_aut,
+                              covariates = c("state_dummy", "number_comp","pop_log", "gdppc_log", "gdppc_growth", "aut_ep", 
+                                             "v2x_polyarchy", "coups", "conflict", "theta_mean_inv"),
+                              plot = FALSE)
+ 
+ psmatch <- get_covariate_balance(PM.results.psmatch$att,
+                                  data = df_match_aut,
+                                  covariates = c("state_dummy", "number_comp","pop_log", "gdppc_log", "gdppc_growth", "aut_ep", 
+                                                 "v2x_polyarchy", "coups", "conflict", "theta_mean_inv"),
+                                  plot = FALSE)
+
+
+psweight <- get_covariate_balance(PM.results.psweight$att,
+                                  data = df_match_aut,
+                                  covariates = c("state_dummy", "number_comp","pop_log", "gdppc_log", "gdppc_growth", "aut_ep", 
+                                                 "v2x_polyarchy", "coups", "conflict", "theta_mean_inv"),
+                                  plot = FALSE)
+
+# make nicer plots 
+none <- as.data.frame(none)%>%
+  rename("State-owned ISPs"= state_dummy, 
+         "Population (logged)" = pop_log, 
+         "GDP (logged)" = gdppc_log, 
+         "GDP growth" = gdppc_growth, 
+         "Number ISPs" = number_comp, 
+         "EDI" = v2x_polyarchy,
+         "Offline repression" = theta_mean_inv,
+         "Conflict" = conflict)
+
+
+none <- none %>%
+  rownames_to_column("year") %>%
+  pivot_longer(-year, names_to = "covariate", values_to = "sd_covariate") %>%
+  mutate(year = case_when(year =="t_4" ~ -4, 
+                          year =="t_3" ~ -3,
+                          year =="t_2" ~ -2,
+                          year =="t_1" ~ -1,
+                          year == "t_0" ~ 0))
+
+None <- ggplot(none, aes(x = year, y = sd_covariate, color = covariate)) +
+  geom_line() +
+  geom_hline(yintercept=0, color = "black") +
+  labs(x = "", y = "", color = "Covariates",
+       title = "Before Refinement") +
+  ylim(-0.9, 0.9) +
+  theme(legend.position = "none", 
+        plot.title = element_text(hjust = 0.5)) +
+  theme_pubr()
+
+ maha <- as.data.frame(maha)%>%
+   rename("State-owned ISPs"= state_dummy, 
+          "Population (logged)" = pop_log, 
+          "GDP (logged)" = gdppc_log, 
+          "GDP growth" = gdppc_growth, 
+          "Number ISPs" = number_comp, 
+          "EDI" = v2x_polyarchy,
+          "Offline repression" = theta_mean_inv,
+          "Conflict" = conflict)
+ 
+ maha <- maha %>%
+   rownames_to_column("year") %>%
+   pivot_longer(-year, names_to = "covariate", values_to = "sd_covariate") %>%
+   mutate(year = case_when(year =="t_4" ~ -4, 
+                           year =="t_3" ~ -3,
+                           year =="t_2" ~ -2,
+                           year =="t_1" ~ -1,
+                           year == "t_0" ~ 0))
+ 
+ Maha <- ggplot(maha, aes(x = year, y = sd_covariate, color = covariate)) +
+   geom_line() +
+   geom_hline(yintercept=0, color = "black") +
+   labs(x = "", y = "", color = "Covariates",
+        title = "Mahanlanobis Distance\n Matching") +
+   ylim(-0.9, 0.9) +
+   theme(legend.position = "none", 
+         plot.title = element_text(hjust = 0.5)) +
+   theme_pubr()
+ 
+ psmatch <- as.data.frame(psmatch)%>%
+   rename("State-owned ISPs"= state_dummy, 
+          "Population (logged)" = pop_log, 
+          "GDP (logged)" = gdppc_log, 
+          "GDP growth" = gdppc_growth, 
+          "Number ISPs" = number_comp, 
+          "EDI" = v2x_polyarchy,
+          "Offline repression" = theta_mean_inv,
+          "Conflict" = conflict)
+ 
+ psmatch <- psmatch %>%
+   rownames_to_column("year") %>%
+   pivot_longer(-year, names_to = "covariate", values_to = "sd_covariate") %>%
+   mutate(year = case_when(year =="t_4" ~ -4, 
+                           year =="t_3" ~ -3,
+                           year =="t_2" ~ -2,
+                           year =="t_1" ~ -1,
+                          year == "t_0" ~ 0))
+ 
+ Psmatch <- ggplot(psmatch, aes(x = year, y = sd_covariate, color = covariate)) +
+   geom_line() +
+   geom_hline(yintercept=0, color = "black") +
+   labs(x = "", y = "", color = "Covariates",
+        title = "Propensity Score\n Matching") +
+   ylim(-0.9, 0.9) +
+   theme(legend.position = "none", 
+         plot.title = element_text(hjust = 0.5)) +
+   theme_pubr()
+
+
+psweight <- as.data.frame(psweight)%>%
+  rename("State-owned ISPs"= state_dummy, 
+         "Population (logged)" = pop_log, 
+         "GDP (logged)" = gdppc_log, 
+         "GDP growth" = gdppc_growth, 
+          "Number ISPs" = number_comp, 
+         "EDI" = v2x_polyarchy,
+         "Offline repression" = theta_mean_inv,
+         "Conflict" = conflict)
+
+psweight <- psweight %>%
+  rownames_to_column("year") %>%
+  pivot_longer(-year, names_to = "covariate", values_to = "sd_covariate") %>%
+  mutate(year = case_when(year =="t_4" ~ -4, 
+                          year =="t_3" ~ -3,
+                          year =="t_2" ~ -2,
+                          year =="t_1" ~ -1,
+                          year == "t_0" ~ 0))
+
+Psweight <- ggplot(psweight, aes(x = year, y = sd_covariate, color = covariate)) +
+  geom_line() +
+  geom_hline(yintercept=0, color = "black") +
+  labs(x = "", y = "", color = "Covariates",
+       title = "Propensity Score\n Weighting") +
+  ylim(-0.9, 0.9) +
+  theme(legend.position = "none", 
+        plot.title = element_text(hjust = 0.5)) +
+  theme_pubr()
+
+
+Figure_covariance <- ggarrange(None, Maha, Psmatch, Psweight,
+                               ncol = 4, nrow = 1, 
+                               common.legend = TRUE,
+                               legend = "bottom",
+                               widths = 3)
+Figure_covariance
+
+annotate_figure(Figure_covariance, 
+                left = text_grob("Standardized Mean Differences for Treatment \n of Autocratic Foreign Investment", rot = 90))
+
+```
+
+\newpage
+
+# Alternative matching models
+
+## Excluding controls
+
+```{r}
+#| label: fig-none
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Foreign-autocratic investment and its effect on online repression, point estimates from matching that adjusts for the treatment and covariate histories during the 2-year period prior to the treatment ($L$ = 2) and NO refinement (and no controls included). Asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '30%'
+#| dpi: 300
+
+rm(list=ls())
+# read dataset
+df_all <- read.csv("../data/data_aggr_country.csv")
+
+# load ERT data
+ert <- ERT::get_eps()
+ert <- ert %>% 
+  select(country_text_id, year, aut_ep_id, aut_ep) 
+
+# load vdem data as we need a reliable merging variable for conflict data below (COWcode)
+vdem <- vdemdata::vdem %>% 
+  select(year, country_text_id, COWcode) 
+
+# load conflict data
+# UCDP/PRIO Armed Conflict Dataset version 23.1 (country year)
+ucdp <- readRDS("../data/UcdpPrioConflict_v23_1.rds")
+# internal conflicts
+# here we take UCDP data as it gives the amount of conflicts in a year 
+# and not just yes/no as the conflict variable in vdem
+# prepare UCDP data: interstate conflict SIDE A
+intra <- ucdp %>% 
+  filter(type_of_conflict == 3) %>% # to find intrastate conflicts, no international involvement
+  select(COWcode = gwno_a, year, conflict_id, side_b) %>% # first side A
+  group_by(COWcode, year) %>% 
+  summarise(intra_conflicts = length(conflict_id),
+            opponent_intra =  paste0(side_b, collapse = ", ")) %>% # number of conflicts
+  mutate(COWcode = as.numeric(COWcode),
+         conflict = intra_conflicts) %>% 
+  ungroup() %>% 
+  drop_na()
+intra <- intra %>%
+  select(COWcode, year, conflict) 
+
+# merge with df_all
+ert <- left_join(df_all, ert, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+vdem <- left_join(ert, vdem, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+df_all <- left_join(vdem, intra, by = c("COWcode", "year"))%>% 
+  drop_na(COWcode)
+
+# recode conflict variables, if NA then 0
+df_all <- df_all %>% 
+  mutate(conflict = ifelse(is.na(conflict), 0, conflict))
+
+# subset and rename 
+df_sub <- df_all %>%
+  select(cc, year, v2x_regime, share_for_maj, share_aut, share_dem, state_dummy, number_comp,
+         pop_total, gdppc, gdppc_growth, 
+         v2smgovfilprc, v2smgovshut, v2smgovsmmon,
+         aut_ep, v2x_polyarchy, coups = e_pt_coup, conflict, theta_mean_inv) 
+
+# prepare data, only autocracies
+df <- subset(df_sub, df_sub$v2x_regime < 2)
+
+### Treatment: country is treated if at least  one ISP is majority-owned by foreign-autocratic shareholder
+
+df$treatment_aut <- ifelse(df$share_aut > 0,1,0)
+hist(df$treatment_aut)
+
+# take log of gdp and pop data
+df <- df %>% 
+  mutate(pop_log = log(pop_total),
+         gdppc_log = log(gdppc)) 
+
+# let's flip the Internet censorship and shutdown variables so results are more intuitive
+df <- df %>%
+  mutate(censor = 0-v2smgovfilprc,
+         shut = 0-v2smgovshut,
+         monitor = 0-v2smgovsmmon,
+         onlinerep = pmax(censor, shut, monitor))
+
+# prepare dataset for PanelMatch packacke requirements
+# we need a numerical country identifier 
+df_match <- df %>%
+  group_by(cc) %>%
+  mutate(index = cur_group_id())
+
+
+# subset data
+df_match_aut <- df_match %>%
+  select(cc, year, index, treatment_aut, onlinerep, state_dummy, number_comp,
+         pop_log, gdppc_log, gdppc_growth, aut_ep, v2x_polyarchy, coups, conflict, theta_mean_inv) %>%
+  mutate(year = as.integer(year),
+         index = as.integer(index))%>%
+  as.data.frame()
+
+
+# deselect cc as not integer 
+df_match_aut <- df_match_aut %>%
+  select(-cc) %>% 
+  drop_na()
+
+
+#### 5) foreign investment from autocratic countries (no refinement) ####
+PM.results.none <- PanelMatch(lag = 2, time.id = "year", unit.id = "index",treatment = "treatment_aut",
+                                  refinement.method = "none", 
+                                  data = df_match_aut, 
+                                  qoi = "att", 
+                                  outcome.var = "onlinerep",
+                                  lead = 0:3)
+
+
+# get point estimates
+PE.results.none <- PanelEstimate(sets = PM.results.none, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.none, data = df_match_aut, confidence.level = 0.9)
+
+# make a nice plot 
+aut_none_pred <- summary(PE.results.none, verbose = FALSE)
+aut_none_pred <- cbind(aut_none_pred , time = c(0,1,2,3))
+aut_none_pred <- as.data.frame(aut_none_pred)
+aut_none_pred <- aut_none_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_none_ninty <- summary(ninty, verbose = FALSE)
+aut_none_ninty <- cbind(aut_none_ninty , time = c(0,1,2,3))
+aut_none_ninty <- as.data.frame(aut_none_ninty)
+aut_none_ninty <- aut_none_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_none_all <- cbind(aut_none_pred, aut_none_ninty[,3:4])
+
+aut_none <- ggplot(data = aut_none_all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-2,10,1)) +
+  labs(x = "Years after treatment", 
+       y = "Estimated effect", 
+       title = "Effects on online repression, no refinement")
+aut_none
+```
+
+
+## Alternative refinement methods
+
+```{r}
+#| label: fig-maha
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Foreign-autocratic investment and its effect on online repression, point estimates from matching that adjusts for the treatment and covariate histories during the 2-year period prior to the treatment ($L$ = 2) and mahalanobis distance matching as refinement (controls included). Asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '30%'
+#| dpi: 300
+#### 6) foreign investment from autocratic countries (mahalanobis) ####
+PM.results.maha <- PanelMatch(lag = 2, time.id = "year", unit.id = "index",treatment = "treatment_aut",
+                                  refinement.method = "mahalanobis", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", 
+                                  outcome.var = "onlinerep",
+                                  lead = 0:3)
+
+# get point estimates
+PE.results.maha <- PanelEstimate(sets = PM.results.maha, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.maha, data = df_match_aut, confidence.level = 0.9)
+
+# make a nice plot 
+aut_none_pred <- summary(PE.results.maha, verbose = FALSE)
+aut_none_pred <- cbind(aut_none_pred , time = c(0,1,2,3))
+aut_none_pred <- as.data.frame(aut_none_pred)
+aut_none_pred <- aut_none_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_none_ninty <- summary(ninty, verbose = FALSE)
+aut_none_ninty <- cbind(aut_none_ninty , time = c(0,1,2,3))
+aut_none_ninty <- as.data.frame(aut_none_ninty)
+aut_none_ninty <- aut_none_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_none_all <- cbind(aut_none_pred, aut_none_ninty[,3:4])
+
+aut_none <- ggplot(data = aut_none_all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-2,10,1)) +
+  labs(x = "Years after treatment", 
+       y = "Estimated effect", 
+       title = "Effects on online repression, mahalanobis distance matching")
+aut_none
+```
+
+```{r}
+#| label: fig-ps.match
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Foreign-autocratic investment and its effect on online repression, point estimates from matching that adjusts for the treatment and covariate histories during the 2-year period prior to the treatment ($L$ = 2) and propensity score matching as refinement (controls included). Asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '30%'
+#| dpi: 300
+#### 7) foreign investment from autocratic countries (ps.match) ####
+PM.results.psmatch <- PanelMatch(lag = 2, time.id = "year", unit.id = "index",treatment = "treatment_aut",
+                                  refinement.method = "ps.match", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", 
+                                  outcome.var = "onlinerep",
+                                  lead = 0:3)
+
+# get point estimates
+PE.results.psmatch <- PanelEstimate(sets = PM.results.psmatch, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psmatch, data = df_match_aut, confidence.level = 0.9)
+
+# make a nice plot 
+aut_none_pred <- summary(PE.results.psmatch, verbose = FALSE)
+aut_none_pred <- cbind(aut_none_pred , time = c(0,1,2,3))
+aut_none_pred <- as.data.frame(aut_none_pred)
+aut_none_pred <- aut_none_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_none_ninty <- summary(ninty, verbose = FALSE)
+aut_none_ninty <- cbind(aut_none_ninty , time = c(0,1,2,3))
+aut_none_ninty <- as.data.frame(aut_none_ninty)
+aut_none_ninty <- aut_none_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_none_all <- cbind(aut_none_pred, aut_none_ninty[,3:4])
+
+aut_none <- ggplot(data = aut_none_all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-2,10,1)) +
+  labs(x = "Years after treatment", 
+       y = "Estimated effect", 
+       title = "Effects on online repression, propensity score matching")
+aut_none
+```
+
+\newpage
+
+## Alternative lags and leads
+
+```{r}
+#| label: fig-3lag
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Foreign-autocratic investment and its effect on online repression, point estimates from matching that adjusts for the treatment and covariate histories during the 3-year period prior to the treatment ($L$ = 3) and propensity score weighting as refinement method. Asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars. Controls: State-owned ISPs, GDP, GDP growth, population, levels of democracy (EDI), autocratization (ERT), coups, conflicts (PRIO), offline repression (V-Dem)."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '30%'
+#| dpi: 300
+### 1) foreign investment from autocratic countries (L=3, F=3) ####
+PM.results.psweight <- PanelMatch(lag = 3, time.id = "year", unit.id = "index", 
+                                  treatment = "treatment_aut", refinement.method = "ps.weight", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", outcome.var = "onlinerep",
+                                  lead = 0:3)
+
+
+# get point estimates
+PE.results.psweight <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.9)
+
+# make a nice plot 
+aut_lag3_pred <- summary(PE.results.psweight, verbose = FALSE)
+aut_lag3_pred <- cbind(aut_lag3_pred , time = c(0,1,2,3))
+aut_lag3_pred <- as.data.frame(aut_lag3_pred)
+aut_lag3_pred <- aut_lag3_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_lag3_ninty <- summary(ninty, verbose = FALSE)
+aut_lag3_ninty <- cbind(aut_lag3_ninty , time = c(0,1,2,3))
+aut_lag3_ninty <- as.data.frame(aut_lag3_ninty)
+aut_lag3_ninty <- aut_lag3_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_lag3_all <- cbind(aut_lag3_pred, aut_lag3_ninty[,3:4])
+
+aut_lag3 <- ggplot(data = aut_lag3_all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-2,10,1)) +
+  labs(x = "Years after treatment", 
+       y = "Estimated effect", 
+       title = "Effects on online repression, L=3")
+aut_lag3
+```
+
+```{r}
+#| label: fig-4lag
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Foreign-autocratic investment and its effect on online repression, point estimates from matching that adjusts for the treatment and covariate histories during the 4-year period prior to the treatment ($L$ = 4) and propensity score weighting as refinement method. Asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars. Controls: State-owned ISPs, GDP, GDP growth, population, levels of democracy (EDI), autocratization (ERT), coups, conflicts (PRIO), offline repression (V-Dem)."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '30%'
+#| dpi: 300
+#### 2) foreign investment from autocratic countries (L=4, F=3) ####
+PM.results.psweight <- PanelMatch(lag = 4, time.id = "year", unit.id = "index", 
+                                  treatment = "treatment_aut", refinement.method = "ps.weight", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", outcome.var = "onlinerep",
+                                  lead = 0:3)
+
+
+
+# get point estimates
+PE.results.psweight <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.9)
+
+# make a nice plot 
+aut_lag4_pred <- summary(PE.results.psweight, verbose = FALSE)
+aut_lag4_pred <- cbind(aut_lag4_pred , time = c(0,1,2,3))
+aut_lag4_pred <- as.data.frame(aut_lag4_pred)
+aut_lag4_pred <- aut_lag4_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_lag4_ninty <- summary(ninty, verbose = FALSE)
+aut_lag4_ninty <- cbind(aut_lag4_ninty , time = c(0,1,2,3))
+aut_lag4_ninty <- as.data.frame(aut_lag4_ninty)
+aut_lag4_ninty <- aut_lag4_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_lag4_all <- cbind(aut_lag4_pred, aut_lag4_ninty[,3:4])
+
+aut_lag4 <- ggplot(data = aut_lag4_all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-2,10,1)) +
+  labs(x = "Years after treatment", 
+       y = "Estimated effect", 
+       title = "Effects on online repression, L=4")
+aut_lag4
+```
+
+```{r}
+#| label: fig-4lead
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Foreign-autocratic investment and its effect on online repression, point estimates from matching that adjusts for the treatment and covariate histories during the 2-year period prior to the treatment ($L$ = 2) and propensity score weighting as refinement method with a lead of 4 years ($F$ = 4). Asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars. Controls: State-owned ISPs, GDP, GDP growth, population, levels of democracy (EDI), autocratization (ERT), coups, conflicts (PRIO), offline repression (V-Dem)."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '30%'
+#| dpi: 300
+#### 3) foreign investment from autocratic countries (Lead 4) ####
+PM.results.psweight <- PanelMatch(lag = 2, time.id = "year", unit.id = "index", 
+                                  treatment = "treatment_aut", refinement.method = "ps.weight", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", outcome.var = "onlinerep",
+                                  lead = 0:4)
+
+
+
+# get point estimates
+PE.results.psweight <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.9)
+# view the point estimates
+
+# make a nice plot 
+aut_lead4_pred <- summary(PE.results.psweight, verbose = FALSE)
+aut_lead4_pred <- cbind(aut_lead4_pred , time = c(0,1,2,3,4))
+aut_lead4_pred <- as.data.frame(aut_lead4_pred)
+aut_lead4_pred <- aut_lead4_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_lead4_ninty <- summary(ninty, verbose = FALSE)
+aut_lead4_ninty <- cbind(aut_lead4_ninty , time = c(0,1,2,3,4))
+aut_lead4_ninty <- as.data.frame(aut_lead4_ninty)
+aut_lead4_ninty <- aut_lead4_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_lead4_all <- cbind(aut_lead4_pred, aut_lead4_ninty[,3:4])
+
+aut_lead4 <- ggplot(data = aut_lead4_all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-2,10,1)) +
+  labs(x = "Years after treatment", 
+       y = "Estimated effect", 
+       title = "Effects on online repression, F=4")
+aut_lead4
+```
+
+\newpage
+
+## Effect of foreign-democratic investment
+
+```{r}
+#| label: fig-demo
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "DEMOCRATIC foreign investment and its effect on online repression, point estimates from matching that adjusts for the treatment and covariate histories during the 2-year period prior to the treatment ($L$ = 2) and propensity score weighting as refinement method. Asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars. Controls: State-owned ISPs, GDP, GDP growth, population, levels of democracy (EDI), autocratization (ERT), coups, conflicts (PRIO), offline repression (V-Dem)."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '30%'
+#| dpi: 300
+#### 12) democratic foreign investment
+
+# prepare data, only autocracies
+df <- subset(df_sub, df_sub$v2x_regime < 2)
+
+
+### Treatment: country is treated if at least  one ISP is majority-owned by foreign-democratic shareholder
+
+df$treatment_dem <- ifelse(df$share_dem > 0,1,0)
+hist(df$treatment_dem)
+
+
+# take log of gdp and pop data
+df <- df %>% 
+  mutate(pop_log = log(pop_total),
+         gdppc_log = log(gdppc)) 
+
+# let's flip the Internet censorship and shutdown variables so results are more intuitive
+df <- df %>%
+  mutate(censor = 0-v2smgovfilprc,
+         shut = 0-v2smgovshut,
+         monitor = 0-v2smgovsmmon,
+         onlinerep = pmax(censor, shut, monitor)) # let's build a variable on online repression which takes the max of censor, shut, monitor (add control later on)
+
+# prepare dataset for PanelMatch packacke requirements
+# we need a numerical country identifier 
+df_match <- df %>%
+  group_by(cc) %>%
+  mutate(index = cur_group_id())
+
+
+# subset data
+df_match_dem <- df_match %>%
+  select(cc, year, index, treatment_dem, onlinerep,
+         pop_log, gdppc_log, gdppc_growth, aut_ep, state_dummy, number_comp, v2x_polyarchy, coups, conflict, theta_mean_inv) %>%
+  mutate(year = as.integer(year),
+         index = as.integer(index))%>%
+  as.data.frame()
+
+
+# deselect cc as not integer 
+df_match_dem <- df_match_dem %>%
+  select(-cc) %>% 
+  drop_na()
+
+# propensity score weighting ##
+PM.results.psweight <- PanelMatch(lag = 2, time.id = "year", unit.id = "index", 
+                                  treatment = "treatment_dem", refinement.method = "ps.weight", 
+                                  data = df_match_dem, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", outcome.var = "onlinerep",
+                                  lead = 0:3)
+
+
+# get point estimates
+PE.results.psweight <- PanelEstimate(sets = PM.results.psweight, data = df_match_dem, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psweight, data = df_match_dem, confidence.level = 0.9)
+
+
+# make a nice plot 
+dem_median_pred <- summary(PE.results.psweight, verbose = FALSE)
+dem_median_pred <- cbind(dem_median_pred , time = c(0,1,2,3))
+dem_median_pred <- as.data.frame(dem_median_pred)
+dem_median_pred <- dem_median_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+dem_median_ninty <- summary(ninty, verbose = FALSE)
+dem_median_ninty <- cbind(dem_median_ninty , time = c(0,1,2,3))
+dem_median_ninty <- as.data.frame(dem_median_ninty)
+dem_median_ninty <- dem_median_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+dem_median_all <- cbind(dem_median_pred, dem_median_ninty[,3:4])
+
+dem_median <- ggplot(data = dem_median_all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-2,10,1)) +
+  labs(x = "Years after treatment", 
+       y = "Estimated effect", 
+       title = "Effects on online repression")
+dem_median
+```
+
+
+## Individual outcome variables (forms of online repression disaggregated)
+
+```{r}
+#| label: fig-monitor
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Foreign-autocratic investment and its effect on social media monitoring, point estimates from matching that adjusts for the treatment and covariate histories during the 2-year period prior to the treatment ($L$ = 2) and propensity score weighting as refinement method. Asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars. Controls: State-owned ISPs, GDP, GDP growth, population, levels of democracy (EDI), autocratization (ERT), coups, conflicts (PRIO), offline repression (V-Dem)."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '30%'
+#| dpi: 300
+#### 9) outcome is social media monitoring
+
+# prepare data, only autocracies
+df <- subset(df_sub, df_sub$v2x_regime < 2)
+
+### Treatment: country is treated if at least  one ISP is majority-owned by foreign-autocratic shareholder
+
+df$treatment_aut <- ifelse(df$share_aut > 0,1,0)
+hist(df$treatment_aut)
+
+# take log of gdp and pop data
+df <- df %>% 
+  mutate(pop_log = log(pop_total),
+         gdppc_log = log(gdppc)) 
+
+# let's flip the Internet censorship and shutdown variables so results are more intuitive
+df <- df %>%
+  mutate(censor = 0-v2smgovfilprc,
+         shut = 0-v2smgovshut,
+         monitor = 0-v2smgovsmmon) 
+
+# prepare dataset for PanelMatch packacke requirements
+# we need a numerical country identifier 
+df_match <- df %>%
+  group_by(cc) %>%
+  mutate(index = cur_group_id())
+
+
+# subset data
+df_match_aut <- df_match %>%
+  select(cc, year, index, treatment_aut, monitor, state_dummy, number_comp,
+         pop_log, gdppc_log, gdppc_growth, aut_ep, v2x_polyarchy, coups, conflict, theta_mean_inv) %>%
+  mutate(year = as.integer(year),
+         index = as.integer(index))%>%
+  as.data.frame()
+
+
+# deselect cc as not integer 
+df_match_aut <- df_match_aut %>%
+  select(-cc) %>% 
+  drop_na()
+
+# propensity score weighting ##
+PM.results.psweight <- PanelMatch(lag = 2, time.id = "year", unit.id = "index", 
+                                  treatment = "treatment_aut", refinement.method = "ps.weight", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", outcome.var = "monitor",
+                                  lead = 0:3)
+
+
+
+# get point estimates
+PE.results.psweight <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.9)
+
+
+# make a nice plot 
+aut_lag2_pred <- summary(PE.results.psweight, verbose = FALSE)
+aut_lag2_pred <- cbind(aut_lag2_pred , time = c(0,1,2,3))
+aut_lag2_pred <- as.data.frame(aut_lag2_pred)
+aut_lag2_pred <- aut_lag2_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_lag2_ninty <- summary(ninty, verbose = FALSE)
+aut_lag2_ninty <- cbind(aut_lag2_ninty , time = c(0,1,2,3))
+aut_lag2_ninty <- as.data.frame(aut_lag2_ninty)
+aut_lag2_ninty <- aut_lag2_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_lag2_all <- cbind(aut_lag2_pred, aut_lag2_ninty[,3:4])
+
+aut_lag2 <- ggplot(data = aut_lag2_all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-2,10,1)) +
+  labs(x = "Years after treatment", 
+       y = "Estimated effect", 
+       title = "Effects on social media monitoring")
+aut_lag2
+
+```
+
+```{r}
+#| label: fig-censor
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Foreign-autocratic investment and its effect on internet censorship, point estimates from matching that adjusts for the treatment and covariate histories during the 2-year period prior to the treatment ($L$ = 2) and propensity score weighting as refinement method. Asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars. Controls: State-owned ISPs, GDP, GDP growth, population, levels of democracy (EDI), autocratization (ERT), coups, conflicts (PRIO), offline repression (V-Dem)."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '30%'
+#| dpi: 300
+#### 10) outcome is internet censorship
+
+# prepare data, only autocracies
+df <- subset(df_sub, df_sub$v2x_regime < 2)
+
+### Treatment: country is treated if at least  one ISP is majority-owned by foreign-autocratic shareholder
+
+df$treatment_aut <- ifelse(df$share_aut > 0,1,0)
+hist(df$treatment_aut)
+
+# take log of gdp and pop data
+df <- df %>% 
+  mutate(pop_log = log(pop_total),
+         gdppc_log = log(gdppc)) 
+
+# let's flip the Internet censorship and shutdown variables so results are more intuitive
+df <- df %>%
+  mutate(censor = 0-v2smgovfilprc,
+         shut = 0-v2smgovshut,
+         monitor = 0-v2smgovsmmon) 
+
+# prepare dataset for PanelMatch packacke requirements
+# we need a numerical country identifier 
+df_match <- df %>%
+  group_by(cc) %>%
+  mutate(index = cur_group_id())
+
+
+# subset data
+df_match_aut <- df_match %>%
+  select(cc, year, index, treatment_aut, censor, state_dummy, number_comp,
+         pop_log, gdppc_log, gdppc_growth, aut_ep, v2x_polyarchy, coups, conflict, theta_mean_inv) %>%
+  mutate(year = as.integer(year),
+         index = as.integer(index))%>%
+  as.data.frame()
+
+
+# deselect cc as not integer 
+df_match_aut <- df_match_aut %>%
+  select(-cc) %>% 
+  drop_na()
+
+# propensity score weighting ##
+PM.results.psweight <- PanelMatch(lag = 2, time.id = "year", unit.id = "index", 
+                                  treatment = "treatment_aut", refinement.method = "ps.weight", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", outcome.var = "censor",
+                                  lead = 0:3)
+
+
+# get point estimates
+PE.results.psweight <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.9)
+
+# make a nice plot 
+aut_lag2_pred <- summary(PE.results.psweight, verbose = FALSE)
+aut_lag2_pred <- cbind(aut_lag2_pred , time = c(0,1,2,3))
+aut_lag2_pred <- as.data.frame(aut_lag2_pred)
+aut_lag2_pred <- aut_lag2_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_lag2_ninty <- summary(ninty, verbose = FALSE)
+aut_lag2_ninty <- cbind(aut_lag2_ninty , time = c(0,1,2,3))
+aut_lag2_ninty <- as.data.frame(aut_lag2_ninty)
+aut_lag2_ninty <- aut_lag2_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_lag2_all <- cbind(aut_lag2_pred, aut_lag2_ninty[,3:4])
+
+aut_lag2 <- ggplot(data = aut_lag2_all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-2,10,1)) +
+  labs(x = "Years after treatment", 
+       y = "Estimated effect", 
+       title = "Effects on internet censorship")
+aut_lag2
+```
+
+```{r}
+#| label: fig-shut
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Foreign-autocratic investment and its effect on internet shutdowns, point estimates from matching that adjusts for the treatment and covariate histories during the 2-year period prior to the treatment ($L$ = 2) and propensity score weighting as refinement method. Asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars. Controls: State-owned ISPs, GDP, GDP growth, population, levels of democracy (EDI), autocratization (ERT), coups, conflicts (PRIO), offline repression (V-Dem)."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '30%'
+#| dpi: 300
+#### 11) outcome is internet shutdowns
+
+# prepare data, only autocracies
+df <- subset(df_sub, df_sub$v2x_regime < 2)
+
+### Treatment: country is treated if at least  one ISP is majority-owned by foreign-autocratic shareholder
+
+df$treatment_aut <- ifelse(df$share_aut > 0,1,0)
+hist(df$treatment_aut)
+
+# take log of gdp and pop data
+df <- df %>% 
+  mutate(pop_log = log(pop_total),
+         gdppc_log = log(gdppc)) 
+
+# let's flip the Internet censorship and shutdown variables so results are more intuitive
+df <- df %>%
+  mutate(censor = 0-v2smgovfilprc,
+         shut = 0-v2smgovshut,
+         monitor = 0-v2smgovsmmon) 
+
+# prepare dataset for PanelMatch packacke requirements
+# we need a numerical country identifier 
+df_match <- df %>%
+  group_by(cc) %>%
+  mutate(index = cur_group_id())
+
+
+# subset data
+df_match_aut <- df_match %>%
+  select(cc, year, index, treatment_aut, shut, state_dummy, number_comp,
+         pop_log, gdppc_log, gdppc_growth, aut_ep, v2x_polyarchy, coups, conflict, theta_mean_inv) %>%
+  mutate(year = as.integer(year),
+         index = as.integer(index))%>%
+  as.data.frame()
+
+
+# deselect cc as not integer 
+df_match_aut <- df_match_aut %>%
+  select(-cc) %>% 
+  drop_na()
+
+# propensity score weighting ##
+PM.results.psweight <- PanelMatch(lag = 2, time.id = "year", unit.id = "index", 
+                                  treatment = "treatment_aut", refinement.method = "ps.weight", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", outcome.var = "shut",
+                                  lead = 0:3)
+
+
+
+# get point estimates
+PE.results.psweight <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.9)
+
+# make a nice plot 
+aut_lag2_pred <- summary(PE.results.psweight, verbose = FALSE)
+aut_lag2_pred <- cbind(aut_lag2_pred , time = c(0,1,2,3))
+aut_lag2_pred <- as.data.frame(aut_lag2_pred)
+aut_lag2_pred <- aut_lag2_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_lag2_ninty <- summary(ninty, verbose = FALSE)
+aut_lag2_ninty <- cbind(aut_lag2_ninty , time = c(0,1,2,3))
+aut_lag2_ninty <- as.data.frame(aut_lag2_ninty)
+aut_lag2_ninty <- aut_lag2_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_lag2_all <- cbind(aut_lag2_pred, aut_lag2_ninty[,3:4])
+
+aut_lag2 <- ggplot(data = aut_lag2_all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-2,10,1)) +
+  labs(x = "Years after treatment", 
+       y = "Estimated effect", 
+       title = "Effects on internet shutdowns")
+aut_lag2
+```
+
+
+\newpage
+
+# Different treatment thresholds
+
+```{r}
+#| label: fig-match-alt-10
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Alternative treatment threshold: 10% foreign investment from autocratic countries. Effects of foreign-autocratic investment on online repression. Point estimates from matching adjusting for treatment and covariate histories during the 2-year pre-treatment period ($L$ = 2) and estimated with a lead of three years ($F$ = 3), with propensity score weighting as refinement method; asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars. Estimates in the year before treatment (t-1) are based on a placebo test."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '30%'
+#| dpi: 300
+
+library(dplyr)
+library(tidyverse)
+library(texreg)
+library(PanelMatch)
+library(ERT)
+library(vdemdata)
+library(ggpubr)
+
+# prepare data, only autocracies
+df <- subset(df_sub, df_sub$v2x_regime < 2)
+
+# treatment: country is treated if at least 10% of ISPs is majority-owned by foreign-autocratic shareholder
+df$treatment_aut <- ifelse(df$share_aut > 0.1,1,0)
+
+# take log of gdp and pop data
+df <- df %>% 
+  mutate(pop_log = log(pop_total),
+         gdppc_log = log(gdppc)) 
+
+# let's flip the Internet censorship and shutdown variables so results are more intuitive
+df <- df %>%
+  mutate(censor = 0-v2smgovfilprc,
+         shut = 0-v2smgovshut,
+         monitor = 0-v2smgovsmmon,
+         onlinerep = pmax(censor, shut, monitor)) # let's build a variable on online repression which takes the max of censor, shut, monitor (add control later on)
+
+# prepare dataset for PanelMatch packacke requirements
+# we need a numerical country identifier 
+df_match <- df %>%
+  group_by(cc) %>%
+  mutate(index = cur_group_id())
+
+
+#### Main model: foreign investment from autocratic countries (L=2, F=4) ####
+
+# subset data
+df_match_aut_treat <- df_match %>%
+  select(cc, year, index, treatment_aut, onlinerep, state_dummy, number_comp,
+         pop_log, gdppc_log, gdppc_growth, aut_ep, v2x_polyarchy, coups, conflict, theta_mean_inv) %>%
+  mutate(year = as.integer(year),
+         index = as.integer(index))%>%
+  as.data.frame()
+
+# deselect cc as not integer 
+df_match_aut <- df_match_aut_treat %>%
+  select(-cc) %>% 
+  drop_na()
+
+
+# propensity score weighting ##
+PM.results.psweight <- PanelMatch(lag = 2, time.id = "year", unit.id = "index", 
+                                  treatment = "treatment_aut", refinement.method = "ps.weight", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + 
+                                    I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + 
+                                    I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", outcome.var = "onlinerep",
+                                  lead = 0:3, placebo.test = TRUE)
+
+# get point estimates
+PE.results.psweight <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.9)
+
+# conduct placebo test for t-1
+placebo_1 <- placebo_test(PM.results.psweight,
+                          data = df_match_aut,
+                          number.iterations = 1000,
+                          plot = FALSE)
+placebo_1_est <- placebo_1$estimates[1]
+z_95 <- 1.96
+placebo_1_high <- placebo_1$estimates[1] + z_95*placebo_1$standard.errors
+placebo_1_low <- placebo_1$estimates[1] - z_95*placebo_1$standard.errors
+z_90 <- 1.645
+placebo_1_high_90 <- placebo_1$estimates[1] + z_90*placebo_1$standard.errors
+placebo_1_low_90 <- placebo_1$estimates[1] - z_90*placebo_1$standard.errors
+
+placebo_data_pred <- data.frame(year = c(-1), 
+                              estimate =  placebo_1_est,
+                              conflow = placebo_1_low,
+                              confhigh = placebo_1_high)
+placebo_data_ninty <- data.frame(year = c(-1), 
+                              estimate =  placebo_1_est,
+                              conflow_90 = placebo_1_low_90,
+                              confhigh_90 = placebo_1_high_90)
+                              
+# make a nice plot including placebo test estimates
+aut_lag2_pred <- summary(PE.results.psweight, verbose = FALSE)
+aut_lag2_pred <- cbind(aut_lag2_pred , time = c(0,1,2,3))
+aut_lag2_pred <- as.data.frame(aut_lag2_pred)
+aut_lag2_pred <- aut_lag2_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_lag2_ninty <- summary(ninty, verbose = FALSE)
+aut_lag2_ninty <- cbind(aut_lag2_ninty , time = c(0,1,2,3))
+aut_lag2_ninty <- as.data.frame(aut_lag2_ninty)
+aut_lag2_ninty <- aut_lag2_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_lag2_all <- cbind(aut_lag2_pred, aut_lag2_ninty[,3:4])
+placebo_all <- cbind(placebo_data_pred, placebo_data_ninty[,3:4])
+all <- rbind(aut_lag2_all, placebo_all)
+
+aut_lag2 <- ggplot(data = all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-1,3,1)) +
+  labs(x = "Years around treatment", 
+       y = "Estimated effect", 
+       title = "")
+aut_lag2
+
+```
+
+
+```{r}
+#| label: fig-match-alt-20
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Alternative treatment threshold: 20% foreign investment from autocratic countries. Effects of foreign-autocratic investment on online repression. Point estimates from matching adjusting for treatment and covariate histories during the 2-year pre-treatment period ($L$ = 2) and estimated with a lead of three years ($F$ = 3), with propensity score weighting as refinement method; asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars. Estimates in the year before treatment (t-1) are based on a placebo test."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '30%'
+#| dpi: 300
+
+library(dplyr)
+library(tidyverse)
+library(texreg)
+library(PanelMatch)
+library(ERT)
+library(vdemdata)
+library(ggpubr)
+
+rm(list=ls())
+# read dataset
+df_all <- read.csv("../data/data_aggr_country.csv")
+
+# load ERT data
+ert <- ERT::get_eps()
+ert <- ert %>% 
+  select(country_text_id, year, aut_ep_id, aut_ep) 
+
+# load vdem data as we need a reliable merging variable for conflict data below (COWcode)
+vdem <- vdemdata::vdem %>% 
+  select(year, country_text_id, COWcode) 
+
+# load conflict data
+# UCDP/PRIO Armed Conflict Dataset version 23.1 (country year)
+ucdp <- readRDS("../data/UcdpPrioConflict_v23_1.rds")
+# internal conflicts
+# here we take UCDP data as it gives the amount of conflicts in a year 
+# and not just yes/no as the conflict variable in vdem
+# prepare UCDP data: interstate conflict SIDE A
+intra <- ucdp %>% 
+  filter(type_of_conflict == 3) %>% # to find intrastate conflicts, no international involvement
+  select(COWcode = gwno_a, year, conflict_id, side_b) %>% # first side A
+  group_by(COWcode, year) %>% 
+  summarise(intra_conflicts = length(conflict_id),
+            opponent_intra =  paste0(side_b, collapse = ", ")) %>% # number of conflicts
+  mutate(COWcode = as.numeric(COWcode),
+         conflict = intra_conflicts) %>% 
+  ungroup() %>% 
+  drop_na()
+intra <- intra %>%
+  select(COWcode, year, conflict) 
+
+# merge with df_all
+ert <- left_join(df_all, ert, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+vdem <- left_join(ert, vdem, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+df_all <- left_join(vdem, intra, by = c("COWcode", "year"))%>% 
+  drop_na(COWcode)
+
+# recode conflict variables, if NA then 0
+df_all <- df_all %>% 
+  mutate(conflict = ifelse(is.na(conflict), 0, conflict))
+
+# subset and rename 
+df_sub <- df_all %>%
+  select(cc, year, v2x_regime, share_for_maj, share_aut, share_dem, state_dummy, number_comp,
+         pop_total, gdppc, gdppc_growth, 
+         v2smgovfilprc, v2smgovshut, v2smgovsmmon,
+         aut_ep, v2x_polyarchy, coups = e_pt_coup, conflict, theta_mean_inv) 
+
+# prepare data, only autocracies
+df <- subset(df_sub, df_sub$v2x_regime < 2)
+
+# treatment: country is treated if at least 20% of ISPs is majority-owned by foreign-autocratic shareholder
+df$treatment_aut <- ifelse(df$share_aut > 0.2,1,0)
+
+# take log of gdp and pop data
+df <- df %>% 
+  mutate(pop_log = log(pop_total),
+         gdppc_log = log(gdppc)) 
+
+# let's flip the Internet censorship and shutdown variables so results are more intuitive
+df <- df %>%
+  mutate(censor = 0-v2smgovfilprc,
+         shut = 0-v2smgovshut,
+         monitor = 0-v2smgovsmmon,
+         onlinerep = pmax(censor, shut, monitor)) # let's build a variable on online repression which takes the max of censor, shut, monitor (add control later on)
+
+# prepare dataset for PanelMatch packacke requirements
+# we need a numerical country identifier 
+df_match <- df %>%
+  group_by(cc) %>%
+  mutate(index = cur_group_id())
+
+
+#### Main model: foreign investment from autocratic countries (L=2, F=4) ####
+
+# subset data
+df_match_aut_treat <- df_match %>%
+  select(cc, year, index, treatment_aut, onlinerep, state_dummy, number_comp,
+         pop_log, gdppc_log, gdppc_growth, aut_ep, v2x_polyarchy, coups, conflict, theta_mean_inv) %>%
+  mutate(year = as.integer(year),
+         index = as.integer(index))%>%
+  as.data.frame()
+
+# deselect cc as not integer 
+df_match_aut <- df_match_aut_treat %>%
+  select(-cc) %>% 
+  drop_na()
+
+
+# propensity score weighting ##
+PM.results.psweight <- PanelMatch(lag = 2, time.id = "year", unit.id = "index", 
+                                  treatment = "treatment_aut", refinement.method = "ps.weight", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + 
+                                    I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + 
+                                    I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", outcome.var = "onlinerep",
+                                  lead = 0:3, placebo.test = TRUE)
+
+# get point estimates
+PE.results.psweight <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.9)
+
+# conduct placebo test for t-1
+placebo_1 <- placebo_test(PM.results.psweight,
+                          data = df_match_aut,
+                          number.iterations = 1000,
+                          plot = FALSE)
+placebo_1_est <- placebo_1$estimates[1]
+z_95 <- 1.96
+placebo_1_high <- placebo_1$estimates[1] + z_95*placebo_1$standard.errors
+placebo_1_low <- placebo_1$estimates[1] - z_95*placebo_1$standard.errors
+z_90 <- 1.645
+placebo_1_high_90 <- placebo_1$estimates[1] + z_90*placebo_1$standard.errors
+placebo_1_low_90 <- placebo_1$estimates[1] - z_90*placebo_1$standard.errors
+
+placebo_data_pred <- data.frame(year = c(-1), 
+                              estimate =  placebo_1_est,
+                              conflow = placebo_1_low,
+                              confhigh = placebo_1_high)
+placebo_data_ninty <- data.frame(year = c(-1), 
+                              estimate =  placebo_1_est,
+                              conflow_90 = placebo_1_low_90,
+                              confhigh_90 = placebo_1_high_90)
+                              
+# make a nice plot including placebo test estimates
+aut_lag2_pred <- summary(PE.results.psweight, verbose = FALSE)
+aut_lag2_pred <- cbind(aut_lag2_pred , time = c(0,1,2,3))
+aut_lag2_pred <- as.data.frame(aut_lag2_pred)
+aut_lag2_pred <- aut_lag2_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_lag2_ninty <- summary(ninty, verbose = FALSE)
+aut_lag2_ninty <- cbind(aut_lag2_ninty , time = c(0,1,2,3))
+aut_lag2_ninty <- as.data.frame(aut_lag2_ninty)
+aut_lag2_ninty <- aut_lag2_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_lag2_all <- cbind(aut_lag2_pred, aut_lag2_ninty[,3:4])
+placebo_all <- cbind(placebo_data_pred, placebo_data_ninty[,3:4])
+all <- rbind(aut_lag2_all, placebo_all)
+
+aut_lag2 <- ggplot(data = all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-1,3,1)) +
+  labs(x = "Years around treatment", 
+       y = "Estimated effect", 
+       title = "")
+aut_lag2
+
+```
+
+
+```{r}
+#| label: fig-match-alt-30
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Alternative treatment threshold: 30% foreign investment from autocratic countries. Effects of foreign-autocratic investment on online repression. Point estimates from matching adjusting for treatment and covariate histories during the 2-year pre-treatment period ($L$ = 2) and estimated with a lead of three years ($F$ = 3), with propensity score weighting as refinement method; asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars. Estimates in the year before treatment (t-1) are based on a placebo test."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '30%'
+#| dpi: 300
+
+library(dplyr)
+library(tidyverse)
+library(texreg)
+library(PanelMatch)
+library(ERT)
+library(vdemdata)
+library(ggpubr)
+
+rm(list=ls())
+# read dataset
+df_all <- read.csv("../data/data_aggr_country.csv")
+
+# load ERT data
+ert <- ERT::get_eps()
+ert <- ert %>% 
+  select(country_text_id, year, aut_ep_id, aut_ep) 
+
+# load vdem data as we need a reliable merging variable for conflict data below (COWcode)
+vdem <- vdemdata::vdem %>% 
+  select(year, country_text_id, COWcode) 
+
+# load conflict data
+# UCDP/PRIO Armed Conflict Dataset version 23.1 (country year)
+ucdp <- readRDS("../data/UcdpPrioConflict_v23_1.rds")
+# internal conflicts
+# here we take UCDP data as it gives the amount of conflicts in a year 
+# and not just yes/no as the conflict variable in vdem
+# prepare UCDP data: interstate conflict SIDE A
+intra <- ucdp %>% 
+  filter(type_of_conflict == 3) %>% # to find intrastate conflicts, no international involvement
+  select(COWcode = gwno_a, year, conflict_id, side_b) %>% # first side A
+  group_by(COWcode, year) %>% 
+  summarise(intra_conflicts = length(conflict_id),
+            opponent_intra =  paste0(side_b, collapse = ", ")) %>% # number of conflicts
+  mutate(COWcode = as.numeric(COWcode),
+         conflict = intra_conflicts) %>% 
+  ungroup() %>% 
+  drop_na()
+intra <- intra %>%
+  select(COWcode, year, conflict) 
+
+# merge with df_all
+ert <- left_join(df_all, ert, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+vdem <- left_join(ert, vdem, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+df_all <- left_join(vdem, intra, by = c("COWcode", "year"))%>% 
+  drop_na(COWcode)
+
+# recode conflict variables, if NA then 0
+df_all <- df_all %>% 
+  mutate(conflict = ifelse(is.na(conflict), 0, conflict))
+
+# subset and rename 
+df_sub <- df_all %>%
+  select(cc, year, v2x_regime, share_for_maj, share_aut, share_dem, state_dummy, number_comp,
+         pop_total, gdppc, gdppc_growth, 
+         v2smgovfilprc, v2smgovshut, v2smgovsmmon,
+         aut_ep, v2x_polyarchy, coups = e_pt_coup, conflict, theta_mean_inv) 
+
+# prepare data, only autocracies
+df <- subset(df_sub, df_sub$v2x_regime < 2)
+
+# treatment: country is treated if at least 30% of ISPs is majority-owned by foreign-autocratic shareholder
+df$treatment_aut <- ifelse(df$share_aut > 0.3,1,0)
+
+# take log of gdp and pop data
+df <- df %>% 
+  mutate(pop_log = log(pop_total),
+         gdppc_log = log(gdppc)) 
+
+# let's flip the Internet censorship and shutdown variables so results are more intuitive
+df <- df %>%
+  mutate(censor = 0-v2smgovfilprc,
+         shut = 0-v2smgovshut,
+         monitor = 0-v2smgovsmmon,
+         onlinerep = pmax(censor, shut, monitor)) # let's build a variable on online repression which takes the max of censor, shut, monitor (add control later on)
+
+# prepare dataset for PanelMatch packacke requirements
+# we need a numerical country identifier 
+df_match <- df %>%
+  group_by(cc) %>%
+  mutate(index = cur_group_id())
+
+
+#### Main model: foreign investment from autocratic countries (L=2, F=4) ####
+
+# subset data
+df_match_aut_treat <- df_match %>%
+  select(cc, year, index, treatment_aut, onlinerep, state_dummy, number_comp,
+         pop_log, gdppc_log, gdppc_growth, aut_ep, v2x_polyarchy, coups, conflict, theta_mean_inv) %>%
+  mutate(year = as.integer(year),
+         index = as.integer(index))%>%
+  as.data.frame()
+
+# deselect cc as not integer 
+df_match_aut <- df_match_aut_treat %>%
+  select(-cc) %>% 
+  drop_na()
+
+
+# propensity score weighting ##
+PM.results.psweight <- PanelMatch(lag = 2, time.id = "year", unit.id = "index", 
+                                  treatment = "treatment_aut", refinement.method = "ps.weight", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + 
+                                    I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + 
+                                    I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", outcome.var = "onlinerep",
+                                  lead = 0:3, placebo.test = TRUE)
+
+# get point estimates
+PE.results.psweight <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.9)
+
+# conduct placebo test for t-1
+placebo_1 <- placebo_test(PM.results.psweight,
+                          data = df_match_aut,
+                          number.iterations = 1000,
+                          plot = FALSE)
+placebo_1_est <- placebo_1$estimates[1]
+z_95 <- 1.96
+placebo_1_high <- placebo_1$estimates[1] + z_95*placebo_1$standard.errors
+placebo_1_low <- placebo_1$estimates[1] - z_95*placebo_1$standard.errors
+z_90 <- 1.645
+placebo_1_high_90 <- placebo_1$estimates[1] + z_90*placebo_1$standard.errors
+placebo_1_low_90 <- placebo_1$estimates[1] - z_90*placebo_1$standard.errors
+
+placebo_data_pred <- data.frame(year = c(-1), 
+                              estimate =  placebo_1_est,
+                              conflow = placebo_1_low,
+                              confhigh = placebo_1_high)
+placebo_data_ninty <- data.frame(year = c(-1), 
+                              estimate =  placebo_1_est,
+                              conflow_90 = placebo_1_low_90,
+                              confhigh_90 = placebo_1_high_90)
+                              
+# make a nice plot including placebo test estimates
+aut_lag2_pred <- summary(PE.results.psweight, verbose = FALSE)
+aut_lag2_pred <- cbind(aut_lag2_pred , time = c(0,1,2,3))
+aut_lag2_pred <- as.data.frame(aut_lag2_pred)
+aut_lag2_pred <- aut_lag2_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_lag2_ninty <- summary(ninty, verbose = FALSE)
+aut_lag2_ninty <- cbind(aut_lag2_ninty , time = c(0,1,2,3))
+aut_lag2_ninty <- as.data.frame(aut_lag2_ninty)
+aut_lag2_ninty <- aut_lag2_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_lag2_all <- cbind(aut_lag2_pred, aut_lag2_ninty[,3:4])
+placebo_all <- cbind(placebo_data_pred, placebo_data_ninty[,3:4])
+all <- rbind(aut_lag2_all, placebo_all)
+
+aut_lag2 <- ggplot(data = all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-1,3,1)) +
+  labs(x = "Years around treatment", 
+       y = "Estimated effect", 
+       title = "")
+aut_lag2
+
+```
+
+
+```{r}
+#| label: fig-match-alt-50
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Alternative treatment threshold: 50% foreign investment from autocratic countries. Effects of foreign-autocratic investment on online repression. Point estimates from matching adjusting for treatment and covariate histories during the 2-year pre-treatment period ($L$ = 2) and estimated with a lead of three years ($F$ = 3), with propensity score weighting as refinement method; asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars. Estimates in the year before treatment (t-1) are based on a placebo test."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '30%'
+#| dpi: 300
+
+library(dplyr)
+library(tidyverse)
+library(texreg)
+library(PanelMatch)
+library(ERT)
+library(vdemdata)
+library(ggpubr)
+
+rm(list=ls())
+# read dataset
+df_all <- read.csv("../data/data_aggr_country.csv")
+
+# load ERT data
+ert <- ERT::get_eps()
+ert <- ert %>% 
+  select(country_text_id, year, aut_ep_id, aut_ep) 
+
+# load vdem data as we need a reliable merging variable for conflict data below (COWcode)
+vdem <- vdemdata::vdem %>% 
+  select(year, country_text_id, COWcode) 
+
+# load conflict data
+# UCDP/PRIO Armed Conflict Dataset version 23.1 (country year)
+ucdp <- readRDS("../data/UcdpPrioConflict_v23_1.rds")
+# internal conflicts
+# here we take UCDP data as it gives the amount of conflicts in a year 
+# and not just yes/no as the conflict variable in vdem
+# prepare UCDP data: interstate conflict SIDE A
+intra <- ucdp %>% 
+  filter(type_of_conflict == 3) %>% # to find intrastate conflicts, no international involvement
+  select(COWcode = gwno_a, year, conflict_id, side_b) %>% # first side A
+  group_by(COWcode, year) %>% 
+  summarise(intra_conflicts = length(conflict_id),
+            opponent_intra =  paste0(side_b, collapse = ", ")) %>% # number of conflicts
+  mutate(COWcode = as.numeric(COWcode),
+         conflict = intra_conflicts) %>% 
+  ungroup() %>% 
+  drop_na()
+intra <- intra %>%
+  select(COWcode, year, conflict) 
+
+# merge with df_all
+ert <- left_join(df_all, ert, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+vdem <- left_join(ert, vdem, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+df_all <- left_join(vdem, intra, by = c("COWcode", "year"))%>% 
+  drop_na(COWcode)
+
+# recode conflict variables, if NA then 0
+df_all <- df_all %>% 
+  mutate(conflict = ifelse(is.na(conflict), 0, conflict))
+
+# subset and rename 
+df_sub <- df_all %>%
+  select(cc, year, v2x_regime, share_for_maj, share_aut, share_dem, state_dummy, number_comp,
+         pop_total, gdppc, gdppc_growth, 
+         v2smgovfilprc, v2smgovshut, v2smgovsmmon,
+         aut_ep, v2x_polyarchy, coups = e_pt_coup, conflict, theta_mean_inv) 
+
+# prepare data, only autocracies
+df <- subset(df_sub, df_sub$v2x_regime < 2)
+
+# treatment: country is treated if at least 50% of ISPs is majority-owned by foreign-autocratic shareholder
+df$treatment_aut <- ifelse(df$share_aut > 0.5,1,0)
+
+# take log of gdp and pop data
+df <- df %>% 
+  mutate(pop_log = log(pop_total),
+         gdppc_log = log(gdppc)) 
+
+# let's flip the Internet censorship and shutdown variables so results are more intuitive
+df <- df %>%
+  mutate(censor = 0-v2smgovfilprc,
+         shut = 0-v2smgovshut,
+         monitor = 0-v2smgovsmmon,
+         onlinerep = pmax(censor, shut, monitor)) # let's build a variable on online repression which takes the max of censor, shut, monitor (add control later on)
+
+# prepare dataset for PanelMatch packacke requirements
+# we need a numerical country identifier 
+df_match <- df %>%
+  group_by(cc) %>%
+  mutate(index = cur_group_id())
+
+
+#### Main model: foreign investment from autocratic countries (L=2, F=4) ####
+
+# subset data
+df_match_aut_treat <- df_match %>%
+  select(cc, year, index, treatment_aut, onlinerep, state_dummy, number_comp,
+         pop_log, gdppc_log, gdppc_growth, aut_ep, v2x_polyarchy, coups, conflict, theta_mean_inv) %>%
+  mutate(year = as.integer(year),
+         index = as.integer(index))%>%
+  as.data.frame()
+
+# deselect cc as not integer 
+df_match_aut <- df_match_aut_treat %>%
+  select(-cc) %>% 
+  drop_na()
+
+
+# propensity score weighting ##
+PM.results.psweight <- PanelMatch(lag = 2, time.id = "year", unit.id = "index", 
+                                  treatment = "treatment_aut", refinement.method = "ps.weight", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + 
+                                    I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + 
+                                    I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", outcome.var = "onlinerep",
+                                  lead = 0:3, placebo.test = TRUE)
+
+# get point estimates
+PE.results.psweight <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.9)
+
+# conduct placebo test for t-1
+placebo_1 <- placebo_test(PM.results.psweight,
+                          data = df_match_aut,
+                          number.iterations = 1000,
+                          plot = FALSE)
+placebo_1_est <- placebo_1$estimates[1]
+z_95 <- 1.96
+placebo_1_high <- placebo_1$estimates[1] + z_95*placebo_1$standard.errors
+placebo_1_low <- placebo_1$estimates[1] - z_95*placebo_1$standard.errors
+z_90 <- 1.645
+placebo_1_high_90 <- placebo_1$estimates[1] + z_90*placebo_1$standard.errors
+placebo_1_low_90 <- placebo_1$estimates[1] - z_90*placebo_1$standard.errors
+
+placebo_data_pred <- data.frame(year = c(-1), 
+                              estimate =  placebo_1_est,
+                              conflow = placebo_1_low,
+                              confhigh = placebo_1_high)
+placebo_data_ninty <- data.frame(year = c(-1), 
+                              estimate =  placebo_1_est,
+                              conflow_90 = placebo_1_low_90,
+                              confhigh_90 = placebo_1_high_90)
+                              
+# make a nice plot including placebo test estimates
+aut_lag2_pred <- summary(PE.results.psweight, verbose = FALSE)
+aut_lag2_pred <- cbind(aut_lag2_pred , time = c(0,1,2,3))
+aut_lag2_pred <- as.data.frame(aut_lag2_pred)
+aut_lag2_pred <- aut_lag2_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_lag2_ninty <- summary(ninty, verbose = FALSE)
+aut_lag2_ninty <- cbind(aut_lag2_ninty , time = c(0,1,2,3))
+aut_lag2_ninty <- as.data.frame(aut_lag2_ninty)
+aut_lag2_ninty <- aut_lag2_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_lag2_all <- cbind(aut_lag2_pred, aut_lag2_ninty[,3:4])
+placebo_all <- cbind(placebo_data_pred, placebo_data_ninty[,3:4])
+all <- rbind(aut_lag2_all, placebo_all)
+
+aut_lag2 <- ggplot(data = all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-1,3,1)) +
+  labs(x = "Years around treatment", 
+       y = "Estimated effect", 
+       title = "")
+aut_lag2
+
+```
+\newpage
+
+# References
+

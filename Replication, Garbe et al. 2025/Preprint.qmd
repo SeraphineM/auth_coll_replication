@@ -1,0 +1,551 @@
+---
+title: "Authoritarian collaboration and repression in the digital age: Balancing foreign direct investment and control in internet infrastructure"
+author:
+- name: Lisa Garbe
+  affiliations: 
+    - WZB Berlin, Germany
+- name: Seraphine F. Maerz
+  affiliations: 
+    - University of Melbourne, Australia
+- name: Tina Freyburg
+  affiliations: 
+    - University of St.Gallen, Switzerland
+date: 'last-modified'
+date-format: '[Pre-print version (for replication purposes only):] MMMM D, YYYY'
+format:
+  pdf: 
+    pdf-engine: xelatex
+    colorlinks: true
+    link-citations: true
+    keeptex: true
+    template-partials: 
+      - title.tex
+    include-in-header: 
+      text: |
+        \usepackage{hyperref}
+        \usepackage[noblocks]{authblk}
+        \renewcommand*{\Authsep}{, }
+        \renewcommand*{\Authand}{, }
+        \renewcommand*{\Authands}{, }
+        \renewcommand\Affilfont{\small}
+  html:
+    df_print: paged
+prefer-html: false
+graphics: yes
+geometry: margin=0.9in
+bibliography: bibliography.bib
+thanks: "Pre-print of article forthcoming in Democratization (https://doi.org/10.1080/13510347.2024.2442377). Supplemental Material for this article can be accessed online at https://doi.org/10.1080/13510347.2024.2442377, replication data is available at https://tosco.shinyapps.io/data/. Corresponding author: lisa.garbe@wzb.eu. Seraphine F. Maerz received funding by the German Research Foundation, project number 421517935. Tina Freyburg and Lisa Garbe received funding from the Swiss Network of International Studies and the Basic Research Fund of the University of St.Gallen. We wish to warmly thank Alessandro Cupolo, Livia Eckert, Vera Grünewald, Maria Halloran, Anaïs
+Nimubona, Tobias Sauer, Moana Stadelmann, and Ying Yan for research assistance and participants at the ECPR general conference in Prague, the annual conference of the Swiss Political Science Association in St.Gallen, and the participants of the Special Issue authors’ workshop for their valuable and helpful feedback, especially Rebecca Strauch, Marcus Michaelsen, Ioannis Vergioglou, Julia Bader, Andreas Juon, and Christoph Steinert." 
+abstract: "Controlling the digital public sphere has become an important factor of authoritarianism in the twenty-first century. Authoritarian states are reluctant to accept foreign direct investment (FDI) in their internet infrastructure. However, expanding internet infrastructure is expensive, often necessitating FDI. We argue that investment from other autocracies allows incumbent dictators to provide internet access *and* use it for repressive purposes. Specifically, we contend that the more repressive an authoritarian regime is offline, the higher the share of FDI from other autocracies; and the more FDI from other autocracies, the less FDI prevents the internet from being used for online repression. We analyse how the level of offline repression predicts different ownership structures of internet service providers (ISPs) in authoritarian African countries, and use a difference-in-differences estimator to test how FDI from autocracies affects online repression. Using data from the Telecommunications Ownership and Control dataset (TOSCO 2.0, 2000-2022), we find a positive relationship between levels of repression and share of FDI from autocracies; if at least one ISP is owned by a foreign-autocratic investor, authoritarian regimes can expand repression online. Our study provides new insights into how authoritarian collaboration enables autocracies both to accept FDI in internet infrastructure and to leverage it for repressive ends."
+keywords: "authoritarian collaboration, foreign direct investment, ICT, repression, political economy."
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      cache=FALSE,
+                      message=FALSE, warning=FALSE,
+                      fig.path='figures/',
+                      cache.path = '_cache/',
+                      fig.process = function(x) {
+                      x2 = sub('-\\d+([.][a-z]+)$', '\\1', x)
+                      if (file.rename(x, x2)) x2 else x
+                      })
+
+```
+
+# Introduction
+
+It is a truism that in dictatorships, rulers "must contend with the omnipresent threat of overthrow" [@frantz2018authoritarianism, p. 104]. It is far less clear how digitalization in authoritarian environments affects their political survival and what consequences this has for our understanding of authoritarianism in the digital age. A growing number of studies examine how autocrats instrumentalize digital technologies to stay in power [e.g., @keremouglu2020dictators; @schlumberger2023authoritarianism]. In essence, digital technologies offer dictators new ways to monitor and suppress opposition figures, spread misinformation and pro-regime propaganda, and restrict access to critical information. For example, studies show how repressive regimes use espionage technologies such as Pegasus to infiltrate and monitor opposition movements [@deibert2023autocrat], point to digitally-enabled domestic and transnational repression [@tsourapas2021global; @feldstein2021rise], or observe more targeted repression through increased digital surveillance [@xu2021repress]. They show how autocrats effectively employ propaganda-based threats of repression to stifle dissent [@carter2022autocrats; @huang2018pathology], use cyber controls to support their strategies of violent repression [@gohdes2023repression], or disrupt internet access to prevent opponents from undermining electoral fraud [@garbe2023pulling]. These and other studies have greatly advanced our understanding of how the availability of information and communication technologies (ICTs) can enhance a regime's capacity for repression, and thus our understanding of "digital authoritarianism".
+
+Yet, existing studies have largely neglected the risks to authoritarian survival posed by increased use of digital technologies to maintain power. These risks stem from the substantial investment needed to develop a modern telecommunications infrastructure, leading to dependence on foreign direct investment (FDI). When foreign investors invest directly in a company and gain effective control by acquiring a majority, authoritarian rulers are constrained in their ability to use these companies to pursue political interests. In the context of telecommunications infrastructure, FDI can hinder an autocratic regime’s ability to use the internet for repressive purposes.
+
+The extent to which authoritarian leaders can use the internet for their purposes ultimately depends on their relationship with the telecommunication companies. Despite its decentralized nature, the internet’s infrastructure is organized in a fairly hierarchical way that allows for centralized control over local networks. This local infrastructure is typically provided and run by internet service providers (ISPs) that connect individuals and organizations to the global internet. Known as bottlenecks, ISPs have the ability to monitor and manipulate internet-based information and communication flows [@denardis2012hidden; @denardis2014global; @lichtman2006holding]. As a result, national governments need the cooperation of ISPs operating in their territory if they want to use or manipulate access to internet services to maintain their rule. As Freyburg and others [@freyburg2018authoritarian; @freyburg2023political] suggest, governments are most successful in controlling internet access and use when they directly own the ISPs operating in their territory or when they collaborate with local business elites. By granting licences to (partly) foreign-owned ISPs, hence allowing foreign investors access to the domestic telecommunications sector, state governments make themselves dependent on the investors' willingness to comply with their orders.
+
+However, recent studies on "authoritarian collaboration" [@bader2014would; @vanderhill2012promoting] suggest that the risk of not being able to continue their authoritarian practices is lower if autocratic governments accept FDI from other autocracies. Indeed, both autocratic governments and investors tend to favor FDI flows among themselves [@haggard1990pathways; @o1978reflections]: Autocracies may prefer FDI from other autocracies due to shared governance styles and mutual geopolitical interests, so they can bypass democratic norms that might complicate business operations; and investors from autocratic countries often find it easier to navigate political landscapes in similar regimes, attracted by the autocratic ability to suppress labor demands, repel protesters, and shape tax laws in their favour. Thus, if authoritarian incumbents accept FDI in the critical infrastructure of telecommunications, we would expect them to generally favor FDI from other authoritarian, presumably non-interventionist states to improve their chances of survival.
+
+By examining the dynamics of FDI from the perspective of the investment-receiving government rather than the investors, we take a less conventional perspective in studies of FDI in autocracies. The existing literature on politics and FDI has largely focused on the differences between authoritarian and democratic regimes, with an emphasis on investor preferences. This literature suggests that foreign investors generally prefer democratic countries because they offer greater investment security through political stability, credibility, and robust protection of property rights [@daude2007quality; @globerman2002global; @jensen2003democratic; @weymouth2011political]. At the same time, accountability mechanisms in democracies can slow down negotiations and increase the costs of malfeasance. In contrast, authoritarian regimes offer greater flexibility and faster agreements which may make them more attractive to any investor. More recently, authors such as @bastiaens2016politics and @moon2015foreign have addressed the sources of variation in FDI within authoritarian regimes, but have not examined whether FDI from autocracies tends to flow to other autocracies. In studying factors that influence an authoritarian government's decision to attract FDI, we emphasize that autocracies make strategic decisions about whether to accept FDI, and from whom. Specifically, we argue that to reap the benefits of internet access while avoiding its risks, authoritarian rulers may strategically encourage investment in internet infrastructure from like-minded regimes.
+
+Of course, investor behaviour is likely to be shaped by strategic interests that do not always coincide with regime type. For example, democratic investors may prioritize profits and market access over human rights and tolerate a certain level of repression in the host country. On the other hand, autocratic investors may focus on business profits and resist the host regime's request to use their services for repressive purposes, as this could harm their revenues and customer base. Therefore, while autocratic investors may appear to be natural allies of authoritarian regimes, their investments do not automatically guarantee the autocrats full freedom to control the internet infrastructure. This study systematically tests the relationship between an autocracy's level of repression and investors' regime type. The guiding research questions are: To what extent does the level of repression in authoritarian regimes affect their acceptance of FDI in the telecommunications infrastructure, and in what way does the presence of foreign investors from authoritarian regimes influence an authoritarian regime's use of internet services for repressive purposes?
+
+Correspondingly, our analysis follows a two-step process: First, we theorize and empirically test how varying levels of state repression influence authoritarian collaboration in the telecommunications sector. Second, we examine how this collaboration subsequently affects the extent of online repression. Specifically, we use cross-sectional time series data on shareholders in the telecommunications sector in 44 authoritarian African countries between 2000 and 2022 to examine the role of investor origin [@freyburg2024; @freyburg2023political]. To measure a regime's level of repression, we use the inverted Latent Human Rights Protection Scores (LHRPS) by Fariss and others [@fariss2020estimating]. The results of our analysis suggest that the more repressive a regime is, the more likely it is to work with foreign autocratic investors. They also show that if at least one foreign-owned ISP is majority-owned by authoritarian investors, an authoritarian regime can effectively use the internet to increase online repression. While the international dimension of authoritarianism has increasingly become the focus of scholarly interest in the determinants of authoritarian survival, we still know little about FDI as a form of authoritarian collaboration and how it is linked to offline and online repression. By highlighting this reinforcing cycle between repression and FDI, we contribute to a nuanced understanding of how host government preferences may influence foreign investment flows in sectors critical to maintaining state control and repression.
+
+# Authoritarian collaboration and FDI in internet infrastructure
+
+We argue that the extent to which authoritarian rulers are willing to accept and, likewise, their potential to attract FDI in telecommunications can be explained by central features of authoritarian regimes, notably mass repression. Specifically, we contend that authoritarian rulers consciously choose which investors get access to their telecommunications sector favoring investment from other authoritarian states in order to solve the dilemma of providing access to the internet while not completely relinquishing control over it. This fine-tuning of economic openness through authoritarian collaboration not only prevents the complete loss of control over this key domestic infrastructure, but also possibly enables the regime to maintain, if not increase levels of online repression. We expect this effect to be stronger the more repressive states are in the analogue world.
+
+Scholarship shows a growing interest in understanding how collaboration between authoritarian regimes plays a critical role in sustaining their persistence [@bader2014would; @vanderhill2012promoting]. Crucially, in contrast to autocracy promotion, authoritarian collaboration may or may not be aimed at directly strengthening authoritarian rule. It does not necessarily "reflect a proactive motivation” [@tansey2016problem, p. 149] because of an explicit ideological commitment to promote autocratic rule abroad. Rather, it has been shown that authoritarian leaders are primarily motivated to support other autocrats in order to improve their chances of survival [@von2015democracy]. Such support involves "a broad range of external ties – economic, political, security – between authoritarian states” [@jackson2014role, p. 107], including strategically allocated FDI.
+
+The literature on the political consequences of FDI for authoritarian survival emphasizes the stabilizing effects of FDI on regimes by enabling the development of costly infrastructure, stimulating economic growth and thereby increasing the output legitimacy of the regime [@rommel2023foreign]. In emerging economies, which tend to have limited access to international markets, the two main forms of capital are foreign aid and FDI [@nkusu2014international]. FDI has been shown to supplement domestic savings, facilitate integration into the global economy, promote technological development [@anyanwu2006promoting] and enhance the material well-being of the middle class [@ansell2014inequality; @rommel2023foreign]. While FDI introduces risks and economic challenges for the general population, its advantages predominantly favor groups essential for regime survival. Since it aligns the interests between the regime elite and the middle class towards supporting autocratic rule, attracting FDI is an effective strategy for the regime to extend and sustain its autocratic rule.
+
+This is particularly true for FDI in critical infrastructures, especially telecommunications. Maintaining vital state functions, notably the provision of public goods and national security, is increasingly difficult without a stable and secure telecommunications infrastructure in today's highly interconnected world [@kettemann2020normative]. The internet, as a critical infrastructure, has become key to other critical infrastructures that are considered indispensable for the functioning of states, societies, and economies [@aradau2010security]. Modern information and communication technologies are not only crucial for stimulating economic growth; internet-based investments are the engine of emerging economies. Since emerging markets tend to lack the financial resources and have limited access to international markets to fund the investment themselves, they often rely on FDI [@jin2015ict; @nkusu2014international].
+
+At the same time, "states in general (and developing countries in particular) prefer to retain ownership and control of critical infrastructure sectors, especially 'strategic' sectors such as energy, water and telecommunications” [@doh2004balancing, p. 237]. The strategic belief is that critical infrastructure is more resilient when it is owned by the state, as state ownership reduces “the risk of disruption of the most essential functions” and ensures that these can be quickly restored [@fjader2014nation, p. 123]. This may be particularly true in cases where the disruption is ordered by the state itself, such as government-ordered internet shutdowns. By locally disabling an autonomous system, an ISP can effectively disconnect its customers from the global network, or by blocking access to certain IP addresses, deny them access to specific websites, including social media platforms [@dainotti2014analysis; @keremouglu2024network]. In this context, if the state is the majority owner of an ISP, it retains control over the scope of internet access and can ensure that essential government services are maintained while access to other internet services is blocked [@freyburg2018authoritarian].
+
+Hence, foreign investment in the telecommunications sector can be challenging for the incumbent when the investor’s goals are conflicting with their own. For instance, when investors come from countries with high corporate social responsibility standards, they may refuse to support policies that undermine human rights [@scherer2011new]. In the telecommunications sector, this may prevent the government from effectively exerting control over internet infrastructure, as highlighted by an example from Guinea in 2016. The Guinean regime requested all ISPs in Guinea to set up a "center for control and oversight of traffic (voice and data)” [@hrw2016guinea] that would direct all data traffic through a central server accessible to the government. Three out of four ISPs owned by foreign investors (Orange, MTN and Cellcom) jointly resisted the government’s request which was considered as a violation of the right to privacy [@micek2016telcos]. This anecdote supports that the origin of FDI can make a difference when control is needed.
+
+@fig-info highlights two important features of the evolution of the African telecommunications market. First, between 2000 and 2022, the share of foreign investment in Africa's telecommunications sector has substantively increased. By 2022, almost 50 per cent of ISPs operating in African autocracies were owned by foreign investors. Looking at the sector as a whole, this figure belies the considerable variation we still find across autocracies (see Section 1, Supplemental Material, for an overview of FDI across
+countries and over time). In countries such as Ethiopia and Eritrea, which generally prohibit or restrict FDI in telecommunications sector legally, internet infrastructure has always remained under the full control of the state or local investors. Others discourage FDI indirectly through regulatory charges. For example, Zambia, which has no formal entry barriers for foreign investors, charges USD 12 million for a license to operate internet infrastructure (e.g., compared to USD 100,000 in Uganda), which explains why there is “still only one international gateway operator—the state-owned Zambia telecommunications Company Ltd. (Zamtel)” [@williams2011africa]. Other autocracies, such as Gabon, Rwanda, or Mali, have been strong proponents of telecom liberalization; their telecommunications sectors are 100 percent internationalized. Second, while the example of Algeria between 2000 and 2023 shows that a relatively high share of foreign investors can be limited to foreign majority shareholders from other autocracies, authoritarian regimes in general do not seem to have primarily accepted investment from other authoritarian regimes. Instead, we observe a high and increasing share of foreign investment from democracies. This observation supports our interest in investigating the determinants of autocracies' varying FDI preferences.
+
+```{r}
+#| label: fig-info
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Foreign investment in ISPs in African autocracies, 2000-2022. The lines indicate the overall share of foreign investors in the total of ISPs in African autocracies (N = 44). 'Autocratic' refers to investors with headquarters in closed and electoral autocracies; 'democratic' to those from electoral and liberal democracies, using the Regimes of the World (RoW) dataset."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '60%'
+#| dpi: 300
+
+
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(wesanderson)
+library(ggpubr)
+
+
+rm(list=ls())
+
+
+### read dataset
+df <- read.csv("data/data_aggr_country_reg.csv")
+
+dfline <- df %>% select(year,cc,share_for_maj,share_aut,share_dem)
+colnames(dfline)[3] <-"all"
+colnames(dfline)[4] <-"autocratic"
+colnames(dfline)[5] <-"democratic"
+dfline <- tidyr::gather(dfline,"group","value",3:5)
+dfline <- dfline %>% group_by(year,group)%>% 
+  dplyr::summarize(value=mean(na.omit(value)))
+line <- ggplot(dfline,aes(x=year,y=value,group=group,color=group))+
+  geom_line(aes(linetype=group), size=0.9)+
+  theme_classic()+
+  coord_cartesian(ylim = c(0, 0.7))+
+  ylab("Share of foreign investors")+
+  xlab("")+
+  scale_color_manual(values=rev(wes_palette(n=3, name="BottleRocket2")))+
+  theme(axis.title.y = element_text(size = 10))
+line <- ggpar(line, legend = "bottom",legend.title = "")
+
+line
+```
+
+In sum, authoritarian regimes may have strategic reasons to prevent foreign investment in the telecommunications sector and to maintain full control over the provision and use of internet services. As Boas [@boas2006weaving, p. 9] suggests, "in order to reap the benefits of the technology while avoiding what they see as negative ramifications, \[authoritarian\] leaders would prefer to exert greater centralized control over Internet use”. Still, the same survival interests may lead them to accept FDI in the expansion of internet provision that is critical to achieving economic or political goals [@king2013censorship; @stier2017internet; @xu2021repress]. In accepting FDI, the extent to which a government loses control depends on the extent to which the foreign investor would prevent it from exercising such control.
+
+## Authoritarian FDI and repression
+
+While authoritarian rulers are generally reluctant to accept FDI in the telecommunications sector, we expect them to be less reluctant to accept FDI from other authoritarian regimes, which are presumably less likely to constrain them in exercising control over the internet and using it for repressive purposes. We define repression as the "actual or threatened use of physical sanctions against an individual or organization \[…\] for the purpose of imposing a cost on the target as well as deterring specific activities and/or beliefs perceived to be challenging to government personnel, practices or institutions” [@davenport2007state, p. 2]. Authoritarian governments often use repression, such as torture or killings, strategically when faced with civil unrest [@carey2006dynamic; @josua2015repress]. Governments using repression are afraid of being exposed which could trigger unwanted reactions both domestically and internationally. Domestically, when citizens experience mass repression, they are likely to engage in anti-regime protest [@pierskalla2010protest]. Internationally, repressive governments may face a suspension of foreign aid or targeted sanctions, especially when their use of repression is well-documented and attracts media attention [@nielsen2014rewarding].
+
+Increasing digitalization creates new risks for governments when applying repression. For example, repression becomes more costly in the digital era as internet access permits individuals to record and share evidence of state violence and thereby mobilize people to protest against the regime [@karekwaivanane2019; @mutsvairo2016dovetailing]. By "documenting and digitally sharing evidence of police brutality, protesters translate \[…\] outrage over repression into additional support” [@christensen2018can, p.2]. Moreover, evidence of state violence can quickly be shared with the rest of the world, leading to increased pressure from the international community [@kasm2018redefining].
+
+At the same time, increasing digitalization provides new opportunities for authoritarian regimes to maintain and foster their rule: it allows them to learn about anti-regime sentiment and monitor regime opponents. Such information can be crucial to forestall and prevent collective action [@king2013censorship; @qin2017does]. It also enables authoritarian rulers to increase the precision of repression, making it politically less costly [@xu2021repress]. To maximize the benefits of internet provision, while reducing the risks, governments may strategically censor internet content that could provoke protests or temporarily block internet access to hide their use of repression and human rights violations or to selectively repress regime opponents during politically tense periods.
+
+Repressive governments should have an incentive to strictly control internet access so that they can use it for both surveillance and censorship or manipulation of access to (specific) internet services, when needed. By admitting foreign firms to manage internet provision to large parts of the population, it becomes more difficult for a government to retain control over the exchange of digital information and communication. We, therefore, generally expect that more repressive regimes have fewer ISPs owned by foreign investors on their territory:
+
+**H1:** *The more an authoritarian regime relies on repression, the smaller the proportion of foreign investors in its telecommunications sector.*
+
+Even if the government is generally reluctant to accept FDI, it may be willing to grant access to investors from other authoritarian regimes in the expectation that their financial involvement will not preclude the use of the internet infrastructure to maintain authoritarian rule. Eventually, foreign investors differ in their goals and practices, some of which are more in line with those of the FDI-accepting government. As studies of international business suggest, investment patterns tend to reflect similarities in institutions between home and host country [@habib2002corruption; @buckley2009determinants; @kolstad2012determines]. Their findings support a reading of authoritarian collaboration as aimed at preventing or undermining Western democratization efforts not only through political ties, but also through financial investment in a mutual act to strengthen the survival of one's own regime [@weyland2017autocratic; @schmotz2018regional]. Case studies underline that outward FDI from authoritarian countries can serve as a tool to stabilize authoritarian structures elsewhere [@bader2014would]. China, for instance, appears to have intensified collaboration with many African countries that are "supportive of their own rule” [@von2015democracy, p. 629] and share common policy goals. Likewise, investors from the Gulf region increasingly invest in nearby countries to foster "autocratic stability in the neighbourhood” [@freyburg2015local].
+
+We expect to find a similar pattern in the African telecommunications sector. Here, internet-providing firms are needed for the technical implementation of digital repression [@earl2022digital], including censorship, internet shutdowns, or state surveillance. If repressive regimes accept FDI in the internet infrastructure, they should tend to accept FDI in internet infrastructure from regimes that are "like-minded” vis-à-vis state sovereignty and human rights [@taylor2006china]. As compared to investors from democratic regimes, ISPs with headquarters in authoritarian regimes may face less legal and reputational pressure from their home countries and civil society actors [@freyburg2018authoritarian; @birkinshaw2006some]. For example, all telecommunications operators that are members of the GNI [@GNI2023], a forum that provides (and self-imposes) behavioral guidelines for ICT companies, are based in Western democracies. In short, repressive regimes should prefer FDI by foreign-autocratic investors in order to balance investment in the internet infrastructure and its control and manipulative use:
+
+**H2:** *The more an authoritarian regime relies on repression, the higher the proportion of foreign investors from other authoritarian regimes in its telecommunications sector.*
+
+Yet, if a primary motivation for authoritarian regimes to prefer FDI from other authoritarian regimes is that these are more likely to allow them to use the internet for repressive purposes, we should find a positive relationship between autocratic FDI (as opposed to non-autocratic FDI) and online repression. Eventually, the most common technical strategies of online repression rely on ISPs to manipulate either the routing or packet forwarding mechanisms [@aceto2015internet; @dainotti2014analysis] to implement full or partial censorship of the internet. Whatever the technique of digital repression, authoritarian rulers most often rely on the internet-providing companies to delay, prevent or manipulate access to internet services [@denardis2014global, p. 11; @goldsmith2006controls, p. 73]. Because each ISP operates its own physical network, ISPs can vary in how they respond to censorship requests from a given government.
+
+Following our previous theoretical argument, we propose that when an ISP is owned by foreign investors, their origin (in terms of the regime type of the locations of their headquarters) will influence the extent to which a government can make that ISP implement its censorship demands. Specifically, we expect that investors from authoritarian regimes will be less likely to prevent authoritarian rulers from using the internet for online repression. Consequently, we should find that if at least one of the ISPs controlled by foreign investors is majority-owned by investors from authoritarian regimes, there is a greater chance that an authoritarian regime can use repressive tactics online. This repression-authoritarian investment nexus illustrates the dynamic interdependence between repression on the one hand and authoritarian control over the internet on the other, taking into account the rule-preserving (i.e. repressive) behavior of both the FDI-attracting and the FDI-investing authoritarian regimes. Our third and final hypothesis thus reads:
+
+**H3:** *If at least one foreign-owned ISP is majority-owned by authoritarian investors, then the likelihood of online repression by that authoritarian regime increases.*
+
+# Research design
+
+We empirically examine the relationship between authoritarian collaboration through FDI and repression across authoritarian African countries between 2000 and 2022 in two steps. While the first step examines the determinants of FDI in the telecom sector, with a particular focus on the role of offline repression, using country- and year-fixed Ordinary Least Square (OLS) regression models, the second step reverses the direction and examines the effect of foreign-autocratic investment on online repression, using a combined matching and difference-in-differences estimator to control for selection bias. In all analyses, we follow the Regimes of the World (RoW) operationalization by Lührmann and others [@luhrmann2017regimes] and broadly define authoritarian regimes as those regimes in which the ruler cannot be removed from office by means of free and fair elections (N~countries~ = 44). As a robustness check, we run all main analyses utilizing two alternative democracy indices to code company headquarters' locations as democratic or autocratic and restricting our sample to African autocracies (see Section 3, Supplemental Material, for further details and results). 
+
+In our empirical analysis we focus on African authoritarian regimes where the supposed dilemma for authoritarian rulers of accepting FDI in the telecommunications sector while maintaining control is particularly pronounced for at least two reasons. First, the African continent is home to a variety of types of authoritarian regimes that differ in the degree to which dictators govern by repression [@cheeseman2015democracy; @geddes1999we; @wright2012authoritarian]. Second, African governments have strong incentives to attract FDI in their domestic telecommunications sector to stimulate growth [@aker2010mobile; @anyanwu2015foreign; @muto2009impact; @roller2001telecommunications]. Overall, the African continent provides a particularly fruitful setting to study the determinants and consequences of FDI in the telecommunications sector. At the same time, the domestic financial constraints to invest in telecommunications infrastructure are comparable to other regions in the Global South, notably Latin America [@wallsten2001econometric].
+
+To measure FDI in the telecommunications sectors of African autocracies, we use the Telecommunications Ownership and Control (TOSCO 2.0) dataset covering ISPs and their shareholders in Africa between 2000 and 2022. TOSCO includes all ISPs that started by providing Global System for Mobile Communications (GSM), a second-generation standard, on the African continent and, hence, provides a near-complete image of those companies providing internet access to individual customers in Africa [@freyburg2024]. For each ISP, TOSCO lists information for all shareholders owning at least 5 per cent stakes, their respective number of stakes, and the location where the shareholder is legally registered.
+
+# Empirical analysis
+
+## How levels of offline repression predict foreign-autocratic investment (Part 1)
+
+To test H1 on the effect of repression on FDI in telecommunications, we construct our first outcome variable by calculating the share of ISPs majority-owned by *foreign* shareholders per country-year. The legal place of registration of the company determines whether an ISP is coded as domestic or foreign. We focus on majority ownership, defined as a shareholding of more than 50 per cent, as this is the most commonly used operationalization [@knutsen2011does, p. 16]. Controlling more than half of the voting rights is the most straightforward way to control a company's management and decision-making: It guarantees control over decisions that require a simple majority at the general meeting, such as the approval of the annual accounts, the distribution of dividends, and the election of members to the board of directors [@thomsen2000ownership; @holderness1988role]. If there is no single majority holder, we identify the majority owner type on the basis of the sum of the shares of the dominant shareholder group. That is, if the sum of the shares of all foreign investors collectively exceeds 50 per cent, the company would be majority foreign-owned. To calculate the extent of foreign ownership of a telecommunications sector, we divide the number of ISPs with majority foreign ownership by the total number of ISPs in a given country-year.
+
+To test H2, we refine our outcome variable by restricting it to FDI that comes from other autocracies. To this end, we determine whether an ISP's headquarter is based in a democratic or an authoritarian regime using the RoW operationalization by [@luhrmann2017regimes]. We code the share of ISPs majority-owned by *foreign-autocratic* and *foreign-democratic* shareholders and divide the number of ISPs majority-owned by foreign-autocratic or foreign-democratic shareholders, respectively, by the total number of ISPs in a given country-year (see Section 1, Supplemental Material, for an overview of foreign and foreign-autpcratic shares in ISPs per country and year).
+
+In H1 and H2, offline repression presents our independent variable. In light of the disagreement in indicators of state repression [@cope2020patterns], we use the Latent Human Rights Protection Score (LHRPS), an estimate based on a latent variable model developed by Fariss and others [@fariss2014respect; @fariss2020estimating] that triangulates information from a variety of data sources to estimate the respect for human rights using an Item Response Model. The estimates come from Bayesian models that capture a country’s respect for physical integrity rights. We use an inverted score such that higher values indicate less respect for human rights.
+
+There are likely other factors influencing FDI in local internet infrastructure or a government's use of online repression. We account for several such confounders by including control variables covering economic, political, and demographic aspects. First, we include the (log) gross domestic product (GDP) per capita and the annual change of GDP per capita in per cent using World Bank indicators because regimes with a low GDP can be expected to be more dependent on FDI. Furthermore, we include a World Bank indicator for the total rents of natural resources and trade (as share of GDP) as regimes with a wealth of natural resources often need the technology and capital of FDI to realize their potential [@bak2016foreign]. Politically, we account for the variance in regime types in terms of their openness to the international economy using two indices from the V-Dem project [@Coppedge2024] that measure the extent to which the military (v2x_ex_military) or a royal council/family (v2x_ex_hereditary) has control over the executive, ranging from 0 (low control) to 1 (high control), [@wilson2014discreet]. Arguably, multi-party and single-party regimes are more open to international trade as they provide more stable institutions than personalist regimes, military juntas, and monarchies [@hankla2013economic]. In addition, we include a measure from V-Dem of how clear, consistent and stable the laws in a country are (v2cltrnslw), which we call "legal transparency" as transparent laws and property rights are likely driving a company's decision to invest abroad [e.g., @daude2007quality]. Demographically, a larger population requires greater internet coverage and may incentivize a government to accept FDI in internet infrastructure. Thus, we include World Bank indicators for the total (log) population and the rural population as control variables. Finally, we account for the direct involvement of the state in the telecommunications sector by including a dummy variable coded 1 if the state is the majority owner of at least one ISP. The rationale is straightforward: State ownership in the internet infrastructure signals the government's reluctance to (fully) privatize the telecommunications sector, thereby minimizing its control over the provision and use of internet services [@freyburg2023political]. Descriptive statistics for all variables included in the analyses are presented in Section 2, Supplemental Material.
+
+To assess the effect of repression on the amount of shares held by foreign investors in general and foreign-autocratic investors in particular, we use country and year-fixed Ordinary Least Square (OLS) regression models. @fig-reg shows the predicted amount of shares held by foreign-autocratic (blue line) and foreign-democratic investors (red line), respectively with rising levels of repression (left panel A), and the regression coefficients for all variables included in the model (right panel B). Regression results
+for all models are presented in Section 4, Supplemental Material.
+
+```{r}
+#| label: fig-reg
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Left Panel shows the percentage of shares held by foreign-autocratic and foreign-democratic investors for various levels of repression, with 90% confidence intervals, using the ggeffect() R function to calculate predicted shares. Right panel shows regression coefficients for all variables included in the regression analysis, using 90% confidence intervals; the coefficients for the control variables hereditary succession and population size are not shown due to large standard errors but can be found in Section 4, Supplemental Material. All variables included in the model are z-standardized to facilitate comparison."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '90%'
+#| dpi: 300
+#| fig-width: 8.5
+#| fig-height: 4.5
+
+library(dplyr)
+library(tidyverse)
+library(ggpubr)
+library(ggplot2)
+library(broom)
+library(ggeffects)
+
+rm(list=ls())
+
+### read dataset
+df <- read.csv("data/data_aggr_country_reg.csv")
+
+#### Coefficient Plot for Fariss analysis
+
+# individual regression analyses
+lm2_aut <- lm(share_aut ~  z.theta_mean_inv + z.logpop + z.pop_rural+ z.v2x_ex_military + z.v2x_ex_hereditary  + z.loggdp + z.gdppc_growth + z.lognat + z.trade + z.v2cltrnslw + z.state_dummy + cc + year_factor, data = df)
+#summary(lm2_aut, stars = c(0.001,  0.01, 0.05, 0.1), single.row = T)
+
+lm2_dem <- lm(share_dem ~  z.theta_mean_inv + z.logpop + z.pop_rural+ z.v2x_ex_military + z.v2x_ex_hereditary  + z.loggdp + z.gdppc_growth + z.lognat + z.trade + z.v2cltrnslw + z.state_dummy + cc + year_factor, data = df)
+#summary(lm2_dem, stars = c(0.001,  0.01, 0.05, 0.1), single.row = T)
+
+lm2_for <- lm(share_for_maj ~  z.theta_mean_inv + z.logpop + z.pop_rural+ z.v2x_ex_military + z.v2x_ex_hereditary  + z.loggdp + z.gdppc_growth + z.lognat + z.trade + z.v2cltrnslw + z.state_dummy + cc + year_factor, data = df)
+#summary(lm2_for, stars = c(0.001,  0.01, 0.05, 0.1), single.row = T)
+
+
+lm2_aut_tidy <- broom::tidy(lm2_aut)
+lm2_dem_tidy <- broom::tidy(lm2_dem)
+lm2_for_tidy <- broom::tidy(lm2_for)
+lm2_aut_tidy$model <- "foreign-autocratic"
+lm2_dem_tidy$model <- "foreign-democratic"
+lm2_for_tidy$model <- "foreign"
+lm2_both <- rbind(lm2_aut_tidy,lm2_dem_tidy)
+
+lm2_both <- lm2_both[c(2,4,5,7:12,53,55,56,58:63),]
+lm2_both$conf.low <- lm2_both$estimate - 1.64 * lm2_both$std.error
+lm2_both$conf.high <- lm2_both$estimate + 1.64 * lm2_both$std.error
+
+vec <- c('Repression (Farris)', 'Rural population','Military regime','GDP (log)','GDP growth','Natural resources (% GDP)','Trade (% GDP)','Legal transparency','State involvement','Repression (Farris)', 'Rural population','Military regime','GDP (log)','GDP growth','Natural resources (% GDP)','Trade (% GDP)','Legal transparency','State involvement')
+
+lm2_both$term <- vec
+
+# Create a named vector for label color
+library(ggtext)
+# Create a named vector for label colors
+label_colors <- ifelse(levels(lm2_both$term) == "Repression (Farris)", "black", "gray30")
+names(label_colors) <- levels(lm2_both$term)
+
+# Create a custom theme element for axis.text.y
+custom_axis_text <- element_markdown(size = 9, color = "grey30")
+
+lm2_both$term <- factor(lm2_both$term, levels = rev(c('Repression (Farris)', 'Rural population','Military regime','GDP (log)','GDP growth','Natural resources (% GDP)','Trade (% GDP)','Legal transparency','State involvement')))
+
+#lm2_both <- lm2_both %>% mutate(term = fct_reorder(term, estimate)) 
+# Update the plot
+plot <- lm2_both %>% 
+  ggplot(aes(estimate, term, group=model, color=model)) +
+  geom_vline(xintercept = 0) +
+  geom_pointrange(aes(xmin = conf.low,
+                      xmax = conf.high),
+                  size=0.2,
+                  position = position_dodge(width = 0.3)) +
+  theme_classic() +
+  scale_color_manual(name = "Investor Type", values = c("darkblue","grey")) +
+  #scale_linetype_manual(name = "Investor Type",values = linetype) +
+  
+  theme(axis.title = element_text(size = 9, colour = "grey30"),
+        axis.text = element_text(size = 9,colour="grey30"),
+        plot.title = element_text(size = 10))+
+        #text=element_text(family="Helvetica Neue Thin", colour = "grey30"),
+  ggtitle("B. Regression Coefficients")+
+  labs(y = "", x = "Estimate") +
+  ylab("") +
+  theme(legend.position = "none",
+        axis.text.y = custom_axis_text)
+
+# Modify the labels to use the custom colors
+plot <- plot +
+  scale_y_discrete(labels = function(x) {
+    sapply(x, function(label) {
+      color <- ifelse(label == "Repression (Farris)", "black", "gray30")
+      sprintf("<span style='color:%s;'>%s</span>", color, label)
+    })
+  })
+
+
+# calculate predicted shares
+lm2_dem_mg <- ggeffect(lm2_dem,ci_level = 0.90, terms = "z.theta_mean_inv")
+plot(lm2_dem_mg)
+lm2_dem_mg$type <- "foreign-democratic"
+
+me_aut2 <- ggeffect(lm2_aut,ci.lvl = 0.90, terms = "z.theta_mean_inv")
+plot(me_aut2)
+me_aut2$type <- "foreign-autocratic"
+
+me_both2 <- rbind(me_aut2,lm2_dem_mg)
+
+
+marg_plot_F <-  ggplot(me_both2, aes(x=x,y=predicted,group=type))+
+  geom_line(aes(color = type), size =0.7)+
+  geom_ribbon(aes(ymin=conf.low,ymax=conf.high), alpha=0.05)+
+  scale_color_manual(name = "Investor Type", values = c("darkblue","grey")) +
+  #scale_linetype_manual(name = "Investor Type",values = linetype) +
+  theme_classic()+
+  theme(axis.title = element_text(size = 9, colour = "grey30"),
+        axis.text = element_text(size = 8,colour="grey30"), 
+        #text=element_text(family="Helvetica Neue Thin", colour = "grey30"),
+        legend.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        plot.title = element_text(size = 10),
+        legend.position = "bottom")+
+  ggtitle("A. Adjusted Predictions")+
+  labs(y = "Predicted % of Shares", x = "Repression")+
+  coord_cartesian(ylim=c(0,0.4))
+
+figure <- ggarrange(marg_plot_F, plot,
+                    ncol = 2, nrow = 1,
+                    widths = c(0.6, 1),
+                    common.legend = TRUE)
+
+figure
+
+
+```
+
+In contrast to our first expectation (H1), the number of shares held by foreign investors is not significantly lower, but significantly higher in more repressive regimes (see Models 1 and 2 in Section 4 in the Supplemental Material). However, and as suggested by H2, this finding is likely to be explained by the effect of repression on the number of shares held by foreign investors from other authoritarian regimes. As shown in the right panel of Figure @fig-reg, repression is significantly related to the amount of shares held by foreign-autocratic investors (R^2^ = .69, F (50,535) = 23.57, p = .01) as compared to foreign-democratic investors ((R^2^ = .8, F (50,535) = 42.11, p = .6), see Model 4 in Section 4 in the Supplemental Material). The plot in the left panel of @fig-reg underlines that the predicted amount of shares held by foreign-autocratic investors increases more with increasing levels of repression than the amount of shares held by foreign-democratic investors.
+
+While these results provide support for H2, the effect is relatively small. We therefore run further analyses to test our argument about the link between ownership of the internet infrastructure and its control. Since the most direct form of state control over internet provision and use is through state ownership, we would expect authoritarian regimes with majority stakes in at least one ISP to also favor autocratic FDI. We find a statistically significant positive effect of the interaction between the level of repression and state involvement in the sector (see Section 5, Supplemental Material). In support of H2, it appears that more repressive regimes seek to minimize the loss of control over the internet by being majority owners and - if they allow FDI - by favoring foreign-autocratic investors.
+
+To further assess the robustness of our results assessing the relationship between levels of offline repression and foreign investment, we run the same models using repression indicators from the Political Terror Scale (PTS) and the Varieties of Democracy (V-Dem) dataset (v2clkill) (see Section 6, Supplemental Material), as well as with independent variables lagged by one and two years (see Section 7, Supplemental Material). The results of the analyses remain fairly consistent with those of our main analyses, given the ongoing debate about the validity of the different measures and their questionable interchangeability [@cope2020patterns; @fariss2014respect]. We also run the analyses using foreign-democratic investment as outcome. As shown in Models 5 and 6 in Section 3, 4, 6 and 7, Supplemental Material, none of the models suggest that repression is significantly related to the amount of shares held by foreign-democratic investors, supporting that more repressive regimes are more likely to attract investment from companies that are not based in democracies.
+
+## How foreign-autocratic investment affects online repression (Part 2)
+
+The second part of the empirical section assesses how FDI from autocratic countries affects levels of online repression in African autocracies (H3). Here, we limit our treatment variable to foreign-autocratic FDI. Since we do not necessarily expect to find a linear relationship between foreign-autocratic investment and online repression, we use a binary treatment variable at the aggregate industry level. Drawing on the OECD definition of a state-controlled sector [@wolfl2009oecd; @koske2015oecd; @conway2005oecd; @kim2022locating], we code foreign-autocratic ISP ownership as 1 if at least one foreign-owned ISP in a country-year is majority-owned by investors legally registered in an autocracy. Correspondingly, we code all observations for country-years in which there are no ISPs majority-owned by foreign-autocratic investors as 0. @fig-chord shows those multinational companies headquartered in autocracies with the highest number of subsidiaries in Africa in 2019. Companies that held majority-shares in ISPs in at least two African autocracies included Viettel from Vietnam, Moov from Morocco, Zain from Kuwait, Smart from Kenya, Azur from Bahrain, and Africell from the Lebanon. Section 8, Supplemental Material, shows how our treatment variable and the control group are distributed in our sample of authoritarian country-years (N~country-years~ = 801) between 2000 and 2022.
+
+![Foreign-autocratic ISPs in 2019. The grey lines show which ISPs that are majority-owned by foreign shareholders from autocracies are operating in which African autocracies in the year 2019.](figures/sankey_plot.png){#fig-chord}
+
+While *offline* repression was our treatment variable to test Hypotheses 1 and 2, we now use *online* repression as outcome variable. To operationalize online repression, we use three variables from the Digital Society Project (DSP) [@Mechkova2024] included in the V-Dem dataset [@Coppedge2024], namely social media monitoring practices (v2smgovsmmon), internet censorship (v2smgovfilprc), and internet shutdowns (v2smgovshut). We combine these variables into one index of online repression based on maximum values per country-year. Taking maximum values rather than mean values seems the most reasonable way to construct this index, as we consider *any* application of these digital tactics as online repression (see Section 12.5, Supplemental Material, for
+results running the analyses on each of the three variables individually).
+
+We include several economic and political control variables, or covariates, that are likely to drive a government's motivation and capacity to use online repression. We account for GDP per capita (logged), a quasi-exogenous factor that may influence both (autocratic) FDI and digital repression, GDP growth (percent), and size of population (logged), using World Bank data. In terms of political confounders, we would expect digital repression to reinforce existing repression, with governments that rely on oppressive tactics to support political objectives more likely to adopt digital repressive techniques [@feldstein2019artificial, p. 47]. We therefore control for a country's level of democracy [Electoral Democracy Index, EDI, @Coppedge2024], whether a country is experiencing an episode of autocratization [i.e., Episode of Regime Transformation, ERT, @Maerz2023], and include the LHRPS indicator for offline repression which we use in the first part of the empirical analysis [@fariss2020estimating]. Finally, when the government is challenged or threatened by coups [@Coppedge2024] or ongoing conflict(s) [UCDP/PRIO, @Gleditsch2002], it is more likely to generate digital repressive responses. In addition, we account for infrastructure-related factors and include a dummy variable indicating whether a country has at least one majority state-owned ISP [@freyburg2018authoritarian] as well as a variable on the overall number of ISPs in a country. Descriptive statistics for all variables included in the analyses are presented in Section 2, Supplemental Material.
+
+To test H3, we use matching techniques for time-series cross-sectional data (with propensity score weighting as refinement method) combined with a difference-in-differences estimator, as proposed by Imai and others [-@Imai2023]. This approach overcomes the potential problem in fixed-effects models with (misspecified) temporal lag structures arising from the assumption that the independent variables are serially uncorrelated [@Leszczensky2022; @Plumper2019]. Before standard matching procedures are applied, it creates matched sets of treated observations and control observations with similar (non-)treatment history, hence accounting for potential past treatment effects (see Section 9, Supplemental Material, for an example of a matched set). [@Imai2023, p. 592]. One core assumption of this matching procedure is that there is common support between treated and control observation, i.e., the distributions of the covariates overlap between treated and control group, ensuring that treated and control groups are equally "supported" by similar covariate values. Section 10, Supplemental Material, illustrates this overlap between the distributions of the propensity scores between both groups. Section 11, Supplemental Material, includes several diagnostic graphs to further examine covariate balance - i.e., the similarity of the distributions of the covariates in both treated and control group - across different matching procedures, illustrating that propensity score weighting achieves the best balance. Furthermore, one key assumption for receiving sensible difference-in-differences estimators is that there are parallel trends to be observed in treated and control groups in absence of treatment, i.e., there are no differences between treated and control group which existed already before the treatment. The estimates for t-1 in @fig-match are based on a placebo test and illustrate that there were indeed no statistically significant differences between treated and control group before treatment, confirming the parallel trends assumption (PTA).
+
+```{r}
+#| label: fig-match
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: "Effects of foreign-autocratic investment on online repression. Point estimates from matching adjusting for treatment and covariate histories during the 2-year pre-treatment period ($L$ = 2) and estimated with a lead of three years ($F$ = 3), with propensity score weighting as refinement method; asymptotic confidence intervals of 95 (black) and 90 (grey) percent as vertical bars. Estimates in the year before treatment (t-1) are based on a placebo test."
+#| fig-align: center
+#| fig-keep: 'last'
+#| out-width: '60%'
+#| dpi: 300
+
+library(dplyr)
+library(tidyverse)
+library(texreg)
+library(PanelMatch)
+library(ERT)
+library(vdemdata)
+library(ggpubr)
+
+rm(list=ls())
+# read dataset
+df_all <- read.csv("data/data_aggr_country.csv")
+
+# load ERT data
+ert <- ERT::get_eps()
+ert <- ert %>% 
+  select(country_text_id, year, aut_ep_id, aut_ep) 
+
+# load vdem data as we need a reliable merging variable for conflict data below (COWcode)
+vdem <- vdemdata::vdem %>% 
+  select(year, country_text_id, COWcode) 
+
+# load conflict data
+# UCDP/PRIO Armed Conflict Dataset version 23.1 (country year)
+ucdp <- readRDS("data/UcdpPrioConflict_v23_1.rds")
+# internal conflicts
+# here we take UCDP data as it gives the amount of conflicts in a year 
+# and not just yes/no as the conflict variable in vdem
+# prepare UCDP data: interstate conflict SIDE A
+intra <- ucdp %>% 
+  filter(type_of_conflict == 3) %>% # to find intrastate conflicts, no international involvement
+  select(COWcode = gwno_a, year, conflict_id, side_b) %>% # first side A
+  group_by(COWcode, year) %>% 
+  summarise(intra_conflicts = length(conflict_id),
+            opponent_intra =  paste0(side_b, collapse = ", ")) %>% # number of conflicts
+  mutate(COWcode = as.numeric(COWcode),
+         conflict = intra_conflicts) %>% 
+  ungroup() %>% 
+  drop_na()
+intra <- intra %>%
+  select(COWcode, year, conflict) 
+
+# merge with df_all
+ert <- left_join(df_all, ert, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+vdem <- left_join(ert, vdem, by = c("country_text_id", "year"))%>% 
+  drop_na(country_text_id)
+df_all <- left_join(vdem, intra, by = c("COWcode", "year"))%>% 
+  drop_na(COWcode)
+
+# recode conflict variables, if NA then 0
+df_all <- df_all %>% 
+  mutate(conflict = ifelse(is.na(conflict), 0, conflict))
+
+# subset and rename 
+df_sub <- df_all %>%
+  select(cc, year, v2x_regime, share_for_maj, share_aut, share_dem, state_dummy, number_comp,
+         pop_total, gdppc, gdppc_growth, 
+         v2smgovfilprc, v2smgovshut, v2smgovsmmon,
+         aut_ep, v2x_polyarchy, coups = e_pt_coup, conflict, theta_mean_inv) 
+
+# prepare data, only autocracies
+df <- subset(df_sub, df_sub$v2x_regime < 2)
+
+# treatment: country is treated if at least  one ISP is majority-owned by foreign-autocratic shareholder
+df$treatment_aut <- ifelse(df$share_aut > 0,1,0)
+
+# take log of gdp and pop data
+df <- df %>% 
+  mutate(pop_log = log(pop_total),
+         gdppc_log = log(gdppc)) 
+
+# let's flip the Internet censorship and shutdown variables so results are more intuitive
+df <- df %>%
+  mutate(censor = 0-v2smgovfilprc,
+         shut = 0-v2smgovshut,
+         monitor = 0-v2smgovsmmon,
+         onlinerep = pmax(censor, shut, monitor)) # let's build a variable on online repression which takes the max of censor, shut, monitor (add control later on)
+
+# prepare dataset for PanelMatch packacke requirements
+# we need a numerical country identifier 
+df_match <- df %>%
+  group_by(cc) %>%
+  mutate(index = cur_group_id())
+
+
+#### Main model: foreign investment from autocratic countries (L=2, F=4) ####
+
+# subset data
+df_match_aut_treat <- df_match %>%
+  select(cc, year, index, treatment_aut, onlinerep, state_dummy, number_comp,
+         pop_log, gdppc_log, gdppc_growth, aut_ep, v2x_polyarchy, coups, conflict, theta_mean_inv) %>%
+  mutate(year = as.integer(year),
+         index = as.integer(index))%>%
+  as.data.frame()
+
+# deselect cc as not integer 
+df_match_aut <- df_match_aut_treat %>%
+  select(-cc) %>% 
+  drop_na()
+
+
+# propensity score weighting ##
+PM.results.psweight <- PanelMatch(lag = 2, time.id = "year", unit.id = "index", 
+                                  treatment = "treatment_aut", refinement.method = "ps.weight", 
+                                  data = df_match_aut, 
+                                  covs.formula = ~ I(lag(pop_log, 1:2)) + I(lag(gdppc_log, 1:2)) +
+                                    I(lag(gdppc_growth, 1:2)) + I(lag(aut_ep, 1:2)) + 
+                                    I(lag(state_dummy, 1:2)) + I(lag(number_comp, 1:2)) +
+                                    I(lag(v2x_polyarchy, 1:2)) +
+                                    I(lag(coups, 1:2)) + I(lag(conflict, 1:2)) + 
+                                    I(lag(theta_mean_inv, 1:2)),
+                                  qoi = "att", outcome.var = "onlinerep",
+                                  lead = 0:3, placebo.test = TRUE)
+
+# get point estimates
+PE.results.psweight <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.95)
+ninty <- PanelEstimate(sets = PM.results.psweight, data = df_match_aut, confidence.level = 0.9)
+
+# conduct placebo test for t-1
+placebo_1 <- placebo_test(PM.results.psweight,
+                          data = df_match_aut,
+                          number.iterations = 1000,
+                          plot = FALSE)
+placebo_1_est <- placebo_1$estimates[1]
+z_95 <- 1.96
+placebo_1_high <- placebo_1$estimates[1] + z_95*placebo_1$standard.errors
+placebo_1_low <- placebo_1$estimates[1] - z_95*placebo_1$standard.errors
+z_90 <- 1.645
+placebo_1_high_90 <- placebo_1$estimates[1] + z_90*placebo_1$standard.errors
+placebo_1_low_90 <- placebo_1$estimates[1] - z_90*placebo_1$standard.errors
+
+placebo_data_pred <- data.frame(year = c(-1), 
+                              estimate =  placebo_1_est,
+                              conflow = placebo_1_low,
+                              confhigh = placebo_1_high)
+placebo_data_ninty <- data.frame(year = c(-1), 
+                              estimate =  placebo_1_est,
+                              conflow_90 = placebo_1_low_90,
+                              confhigh_90 = placebo_1_high_90)
+                              
+# make a nice plot including placebo test estimates
+aut_lag2_pred <- summary(PE.results.psweight, verbose = FALSE)
+aut_lag2_pred <- cbind(aut_lag2_pred , time = c(0,1,2,3))
+aut_lag2_pred <- as.data.frame(aut_lag2_pred)
+aut_lag2_pred <- aut_lag2_pred %>%
+  rename(SE = std.error, 
+         conflow = `2.5%`, 
+         confhigh = `97.5%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow, confhigh)
+
+aut_lag2_ninty <- summary(ninty, verbose = FALSE)
+aut_lag2_ninty <- cbind(aut_lag2_ninty , time = c(0,1,2,3))
+aut_lag2_ninty <- as.data.frame(aut_lag2_ninty)
+aut_lag2_ninty <- aut_lag2_ninty %>%
+  rename(SE = std.error, 
+         conflow_90 = `5%`, 
+         confhigh_90 = `95%`,
+         year = time) %>%
+  dplyr::select(year, estimate, conflow_90, confhigh_90)
+
+aut_lag2_all <- cbind(aut_lag2_pred, aut_lag2_ninty[,3:4])
+placebo_all <- cbind(placebo_data_pred, placebo_data_ninty[,3:4])
+all <- rbind(aut_lag2_all, placebo_all)
+
+aut_lag2 <- ggplot(data = all, aes(x = year)) +
+  geom_linerange(aes(ymin=conflow, ymax = confhigh), linewidth = 1, color = "#a6a6a6") +
+  geom_linerange(aes(ymin=conflow_90, ymax = confhigh_90), linewidth = 1, color = "#5a5a5a") +
+  geom_point(aes(y=estimate), size = 3, color = "black") +
+  geom_hline(aes(yintercept = 0), color = "red", linetype = "dashed", alpha = 0.5) +
+  theme_pubr()+
+  scale_x_continuous(breaks=seq(-1,3,1)) +
+  labs(x = "Years around treatment", 
+       y = "Estimated effect", 
+       title = "")
+aut_lag2
+
+```
+
+The results, presented in @fig-match, suggest that foreign-autocratic investment leads indeed to an increase in online repression over a period of three years after the treatment and thereby provides evidence supporting H3. We test the robustness of the matching in several additional analyses which can be found in the Supplemental Material. First, we run the same analyses with models that are either not refined and exclude controls (see Section 12.1, Supplemental Material) or rely on alternative refinement methods (see Section 12.1, Supplemental Material). The results from these alternative models are less refined but similar, indicating that our findings are not overly model dependent. Second, we use alternative model specifications with varying lags ($L$) in which the results remain largely consistent (see Section 12.2, Supplemental Material). We also test our findings in a model with a lead of 4 years ($F$ = 4); the effect of autocratic FDI on online repression is no longer significant after 4 years (see Section 12.3, Supplemental Material). Third, we run the same analysis using foreign-democratic investment as independent variable. Consistent with our expectations, foreign-democratic investment has no significant effect on online repression (see Section 12.4, Supplemental Material). Finally, we assess the effects of foreign-autocratic investment on different forms of online repression individually. The Figures in Section 12.5, Supplemental Material, illustrate the effects of autocratic FDI on each of these variables individually. While the results for social media monitoring and internet censorship are largely consistent with our findings, we do not find significant effects for internet shutdowns.
+
+# Discussion
+
+Our empirical analysis in Part 1 suggests that more repressive regimes tend to favor investment from other autocracies over alternative foreign investors, while Part 2 shows that such foreign-autocratic investment facilitates the use of the internet for repressive purposes. We may therefore conclude that the preference for autocratic investors is at least partly motivated by the legitimate assumption that they will allow the internet to be used for online repression. Overall, our findings provide evidence for our argument of authoritarian collaboration as a means of reconciling investment in the expansion of the internet with its control or use for repressive purposes. However, as the more detailed discussion of our findings below makes clear, our research design has important caveats, opening up an agenda for future research that could delve deeper into the causal dynamics of the investment-repression nexus and the role of authoritarian collaboration therein.
+
+While our findings point to a positive effect of offline repression on openness to foreign-autocratic investors, our research design does not allow for causal interpretation due to possible endogeneity. From the perspective of investors, studies provide overwhelming evidence that foreign investors prefer to invest in democratic countries [@daude2007quality; @globerman2002global; @jensen2003democratic], for predominantly two reasons. First, checks and balances in democracies are associated with higher levels of stability and government credibility, significantly reducing the risk of noncompliance and sudden changes to contracts or agreements [@weymouth2011political]. Second, foreign investors tend to favor countries with strong property rights protections, which are most commonly found in democracies [@li2003reversal; @olson1993dictatorship]. We control for legal transparency to account for factors that may deter investors and conduct additional analyses including lagged effects of repression to model the temporal dynamics. Since our study focuses exclusively on authoritarian regimes as FDI recipients, however, we cannot examine whether foreign-democratic investors may be less willing to invest in highly repressive countries. Future research should explore in more depth the causal dynamics of the relationship between host country and foreign investors in sectors providing critical infrastructure.
+
+Moreover, we find that predicted levels of foreign-democratic investment are, for a large part, consistently higher than predicted levels of foreign-autocratic investment regardless of how repressive a country is. This could in part be explained by historical legacies, as several major telecommunications operators from former colonial powers (now Western democracies), including Orange from France and Vodafone from the United Kingdom (UK), invested heavily in African telecommunications infrastructure in the early 2000s [@freyburg2023political]. Such early investment secured the companies a position in the market and provided them with opportunities to invest in internet infrastructure later on. Importantly, ISPs vary in their market and infrastructural power. On the one hand, even highly repressive governments might be willing to accept foreign-democratic FDI if it concerns ISPs that provide internet services only to a particular segment of the population. On the other hand, market size alone is not necessarily meaningful, as a small ISP may operate important infrastructure that allows it to control the traffic routed by other ISPs [@warf2012global]. In Cameroon, for instance, the state-owned provider CamTel runs large parts of the national internet backbone, which allegedly facilitated a politically motivated internet shutdown of all major ISPs in 2017 [@dahir_how_2017]. However, due to a lack of data, we can neither control for ISPs' market positions nor their positions in the infrastructural hierarchy. In consequence, we cannot say whether investors from foreign-democratic countries have equally important positions in the market as those from foreign-autocratic countries. Future studies may investigate whether the relative importance of ISPs influences a government’s decision to issue licenses to foreign investors.
+
+Our second finding supports our argument that repressive regimes, in order to maintain control over internet access and use, accept FDI in telecommunications from companies they perceive as willing to comply with political orders to restrict or manipulate internet access, that is companies registered in autocracies. For example, Burundi is marked by both high levels of repression and international involvement in the telecommunications sector. The telecommunications sector is largely privatized, with five out of the six ISPs active between 2000 and 2022 owned by foreign investors, after the government opened the telecommunications sector to private investors in the late 1990s. Two of the foreign ISPs, Smart and Viettel, are owned by foreign-autocratic investors, namely Industrial Promotion Services, headquartered in Nairobi, Kenya, and the government of Vietnam, respectively. ISPs in Burundi were highly invested in both censorship of access to internet content deemed critical of the government and surveillance of individuals by providing customer data to the government [@cipesa2020]. Both foreign-autocratic ISPs are likely to use Deep Packet Inspection (DPI) to block or censor internet access [@xynou2020], a technology that requires expensive hardware. This example highlights how ISPs owned by foreign-autocratic investors can be complicit in controlling internet access.
+
+However, as the examples of Burundi shows, ISPs majority-owned by foreign-autocratic investors often belong to state-owned enterprises, potentially opening the door to more direct diplomatic channels. It may therefore be that not foreign authoritarian investors *per se* increase the likelihood of online repression, but rather foreign investors owned by authoritarian *states*. In line with our core argument, the ownership type of the foreign investors may determine the extent to which the investors' activities reflect political objectives. Business scholars agree that different types of owners differ in their ability to determine corporate decisions [@strange2018corporate]. State-owned firms are typically run by bureaucrats equipped with concentrated control rights and objectives dictated by political interests [@shleifer1997survey; @tusiime2011corporate], such as maintaining the incumbent's rule [@morck2008perspectives]. Studies of the determinants of Chinese FDI demonstrate that state-owned multinationals are more willing to take risks and make unprofitable investments if they promise to pay off in political terms and if they have the economic and political backing of the government [@buckley2009determinants]. As our study is limited to African autocratic recipients due to data availability, we have too few foreign-autocratic state-owned ISPs in our sample to make this distinction. Future studies examining the link between companies in authoritarian regimes and foreign-autocratic investors should pay particular attention not only to the investor’s origin but also to the owner’s identity, notably whether the investing entity is a state-owned enterprise [@jones2017rethinking] and the degree to which the state is involved in the company’s management [@sallai2021authoritarian].
+
+# Conclusion
+
+This study examines the receptiveness of repressive authoritarian regimes to foreign direct investment (FDI) from other autocracies in the telecommunications sector and its implications for online repression. We argue that when an autocracy accepts FDI in a sector as critical to maintaining political control in the digital age as internet provision, it prioritizes investors unlikely to obstruct repressive uses of the internet. Our results show a significant positive correlation between foreign-authoritarian investment in telecommunications and offline repression in African autocracies, with online repression also being significantly higher when at least one internet service provider (ISP) is owned by a foreign-authoritarian investor. These findings suggest that repressive regimes prefer FDI from fellow autocracies, which allows them to effectively invest in internet infrastructure while bolstering their capacity for online repression. By consolidating ties with authoritarian investors, regimes deepen their dependence on foreign autocratic capital, creating a stable nexus between repression and FDI. In doing so, our study has only begun to explore the complex relationship between repression and foreign investment in infrastructure critical for sustaining power.
+
+In addition to advancing understanding of 'digital authoritarianism', our study offers a fresh perspective on authoritarian collaboration by moving beyond a focus on the prominent and powerful authoritarian regimes, i.e. China, Russia and Saudi Arabia [@von2015democracy, p. 624]. First, while these wealthier autocracies can maintain internet control through domestic (state) ownership of telecommunications infrastructure, smaller autocracies in the Global South often lack the resources to develop such infrastructure independently and must rely on FDI. When these autocracies do accept FDI, they prioritize investors unlikely to challenge their use of the internet for political control. Second, our results show that the pool of investors extends beyond these major authoritarian powers to include autocracies around the world, such as Vietnam and Qatar, highlighting a larger and more diverse autocratic network. These insights broaden our understanding of the dynamics of authoritarian collaboration and suggest future research on the varied roles of both investor and recipient autocracies in maintaining and possibly expanding (digital) autocratic control.
+
+\newpage
+
+# References
