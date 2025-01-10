@@ -1,9 +1,11 @@
 # Replication files 
 
-In this folder, you find all material needed to replicate the article 
+In this repository, you find all material needed to replicate the article 
 "Authoritarian collaboration and repression in the digital age: 
 Balancing foreign direct investment and control in internet infrastructure" published
 in Democratization (https://doi.org/10.1080/13510347.2024.2442377).
+
+Download all required files via the breen button `Code`, download zip. 
 
 ## All analyses are conducted in R and Quarto. Quarto is pre-installed in recent versions of RStudio. ##
 
