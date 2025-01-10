@@ -10,7 +10,7 @@ Download all required files via the breen button `Code`, download zip.
 ## All analyses are conducted in R and Quarto. Quarto is pre-installed in recent versions of RStudio. ##
 
 For replicating the entire article including all tables and figures, 
-you need to open the Quarto file "Preprint.qmd", install all R packages
+you need to save all material above in one folder and open the Quarto file "Preprint.qmd" in RStudio, install all R packages
 and render the document. Alternatively, you can also replicate single tables and figures 
 by running the respective R code chunks included in the Quarto file.
 The same applies to "Supplemental Material".
